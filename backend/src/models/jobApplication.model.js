@@ -39,7 +39,32 @@ export default (sequelize, DataTypes) => {
       },
 
       resumeUrl: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+      },
+
+      resumePublicId: {
         type: DataTypes.STRING,
+        allowNull: true,
+      },
+
+      resumeOriginalName: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+
+      resumeResourceType: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+
+      resumeFormat: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+
+      resumeBytes: {
+        type: DataTypes.INTEGER,
         allowNull: true,
       },
 

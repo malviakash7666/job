@@ -15,7 +15,7 @@ console.log("ENV CHECK 👉", process.env.FRONTEND_URL);
 const app = express();
 
 const frontendURL =
-  process.env.FRONTEND_URL || process.env.FRONTREND_URL || "http://localhost:5173";
+  process.env.FRONTEND_URL || process.env.FRONTREND_URL || "http://localhost:5174";
 
 const corsOptions = {
   origin: frontendURL,
@@ -42,6 +42,8 @@ app.use("/api/auth", authRoutes);
 app.use("/api/job-post", jobRoutes);
 // Job application endpoints (match frontend baseURL)
 app.use("/api/v1/job-applications", applicationRoutes);
+// Provide backward-compatible path used by frontend: /api/v1/jobs
+app.use("/api/v1/jobs", jobRoutes);
 
 
 export default app;

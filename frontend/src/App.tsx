@@ -2,8 +2,9 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import HomePage from "./pages/HomePage";
 import LoginPage from "./auth/LoginPage";
 import SignupPage from "./auth/SignupPage";
-import JobPostDashboardPage from "./pages/JobPostDashboardPage";
-import JobSeekerDashboardPage from "./pages/JobSeekerDashboardPage";
+import JobPostDashboardPage from "./pages/dashbord/JobPostDashboardPage";
+import RecruiterApplicantsPage from "./pages/RecruiterApplicantsPage";
+import JobSeekerDashboardPage from "./pages/dashbord/JobSeekerDashboardPage";
 import ProtectedRoute from "./routes/Protected.routes";
 import { useAuth } from "./hooks/useAuth";
 
@@ -70,6 +71,15 @@ const App = () => {
         element={
           <ProtectedRoute allowedRoles={["job_poster", "admin"]}>
             <JobPostDashboardPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/dashboard/jobs/:jobId"
+        element={
+          <ProtectedRoute allowedRoles={["job_poster", "admin"]}>
+            <RecruiterApplicantsPage />
           </ProtectedRoute>
         }
       />
