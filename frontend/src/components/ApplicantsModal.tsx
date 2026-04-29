@@ -7,7 +7,6 @@ import {
   Loader2,
   Mail,
   Phone,
-  FileText,
   Calendar,
   ChevronRight,
   CheckCircle2,

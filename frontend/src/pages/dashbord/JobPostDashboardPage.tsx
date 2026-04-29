@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Briefcase,
@@ -39,9 +39,6 @@ import {
   type CreateJobPostPayload,
   type UpdateJobPostPayload,
 } from "../../service/jobPost.service";
-import {
-  updateApplicationStatus,
-} from "../../service/jobApplication.service";
 import { useNavigate } from "react-router-dom";
 
 /* ─────────────────────────────────────────
@@ -52,8 +49,8 @@ type ModalMode = "create" | "edit";
 /* ─────────────────────────────────────────
    HELPERS
 ───────────────────────────────────────── */
-const drawerTransition = { type: "spring", damping: 28, stiffness: 260 };
-const modalTransition = { type: "spring", damping: 32, stiffness: 280 };
+const drawerTransition: any = { type: "spring", damping: 28, stiffness: 260 };
+const modalTransition: any = { type: "spring", damping: 32, stiffness: 280 };
 
 const formatSalary = (min?: number | null, max?: number | null) => {
   if (!min && !max) return "Not disclosed";
@@ -216,7 +213,6 @@ const JobPostDashboardPage: React.FC = () => {
 
   /* ── Misc ── */
   const [applicantsLoadingRowId, setApplicantsLoadingRowId] = useState<string | null>(null);
-  const [updatingAppId, setUpdatingAppId] = useState<string | null>(null);
 
   /* ─────── Data ─────── */
   const loadJobs = async () => {
@@ -348,17 +344,6 @@ const JobPostDashboardPage: React.FC = () => {
   const handleOpenApplicantsPage = (job: JobPost) => {
     setApplicantsLoadingRowId(job.id);
     navigate(`/dashboard/jobs/${job.id}`);
-  };
-
-  const handleStatusUpdate = async (id: string, status: any) => {
-    try {
-      setUpdatingAppId(id);
-      await updateApplicationStatus(id, { status });
-    } catch (error) {
-      console.error("Failed to update application status", error);
-    } finally {
-      setUpdatingAppId(null);
-    }
   };
 
   /* ─────── RENDER ─────── */

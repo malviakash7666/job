@@ -1,9 +1,9 @@
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-import authRoutes from "./modules/user/auth.routes.js";
-import jobRoutes from "./modules/jobPost/jobPost.routes.js";
-import applicationRoutes from "./modules/jobApplication/jobApplication.routes.js";
+import authRoutes from "./src/modules/user/auth.routes.js";
+import jobRoutes from "./src/modules/jobPost/jobPost.routes.js";
+import applicationRoutes from "./src/modules/jobApplication/jobApplication.routes.js";
 
 import dotenv from "dotenv";
 

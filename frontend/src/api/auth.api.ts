@@ -52,10 +52,10 @@ API.interceptors.response.use(
 );
 
 // REGISTER
-export const registerUser = (data) => API.post("/register", data);
+export const registerUser = (data: any) => API.post("/register", data);
 
 // LOGIN
-export const loginUser = async (data) => {
+export const loginUser = async (data: any) => {
   const res = await API.post("/login", data);
   if (res.data?.accessToken) {
     localStorage.setItem("accessToken", res.data.accessToken);

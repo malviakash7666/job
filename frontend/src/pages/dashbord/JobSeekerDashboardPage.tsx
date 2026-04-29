@@ -769,7 +769,7 @@ const JobSeekerDashboardPage = () => {
                     }
                     return appliedJobs.map((job) => {
                       const initials = job.title.split(" ").slice(0, 2).map((w: string) => w[0]?.toUpperCase() ?? "").join("");
-                      const appliedDate = new Date(job.createdAt).toLocaleDateString("en-IN", {
+                      const appliedDate = new Date(job.createdAt || new Date()).toLocaleDateString("en-IN", {
                         day: "numeric",
                         month: "short",
                         year: "numeric",

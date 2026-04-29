@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft,
   Search,
-  Filter,
   Download,
   Mail,
   Phone,
@@ -19,7 +18,6 @@ import {
   Star,
   Briefcase,
   X,
-  MoreHorizontal,
   AlertCircle,
   RefreshCw,
   SlidersHorizontal,
