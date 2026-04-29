@@ -399,6 +399,7 @@ interface JobCardProps {
   job: JobPost;
   applied: boolean;
   onApply: (job: JobPost) => void;
+  onViewDetails: (job: JobPost) => void;
 }
 
 const typeColors: Record<string, string> = {
@@ -435,7 +436,7 @@ const CARD_ACCENT = [
 let cardIndex = 0;
 const getCardColor = () => CARD_ACCENT[cardIndex++ % CARD_ACCENT.length];
 
-const JobCard = ({ job, applied, onApply }: JobCardProps) => {
+const JobCard = ({ job, applied, onApply, onViewDetails }: JobCardProps) => {
   const [accentClass] = useState(getCardColor);
 
   const salaryLabel =
@@ -455,15 +456,18 @@ const JobCard = ({ job, applied, onApply }: JobCardProps) => {
 
   return (
     <div className="flex flex-col gap-4 rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition hover:border-blue-200 hover:shadow-md">
-      <div className="flex items-start gap-3">
+      <div 
+        className="flex cursor-pointer items-start gap-3"
+        onClick={() => onViewDetails(job)}
+      >
         <div
           className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-sm font-black ${accentClass}`}
         >
           {TITLE_INITIALS(job.title) || "J"}
         </div>
         <div className="min-w-0">
-          <h2 className="truncate text-sm font-black text-gray-900">{job.title}</h2>
-          <p className="truncate text-xs font-semibold text-gray-400">{job.companyName}</p>
+          <h2 className="truncate text-sm font-black text-gray-900 hover:text-blue-600">{job.title}</h2>
+          <p className="truncate text-xs font-semibold text-gray-400 hover:text-gray-600">{job.companyName}</p>
         </div>
       </div>
       <div className="flex flex-wrap gap-1.5">
@@ -563,6 +567,8 @@ const JobSeekerDashboardPage = () => {
   const [appliedIds, setAppliedIds] = useState<Set<string>>(
     () => new Set(JSON.parse(localStorage.getItem("appliedJobIds") || "[]"))
   );
+
+  const [selectedJobForApply, setSelectedJobForApply] = useState<JobPost | null>(null);
 
   const fetchJobs = useCallback(async () => {
     setLoading(true);
@@ -882,7 +888,8 @@ const JobSeekerDashboardPage = () => {
                       key={job.id}
                       job={job}
                       applied={appliedIds.has(job.id)}
-                      onApply={() => navigate(`/job/${job.id}`)}
+                      onApply={setSelectedJobForApply}
+                      onViewDetails={(job) => navigate(`/job/${job.id}`)}
                     />
                   ))}
                 </div>
@@ -901,6 +908,21 @@ const JobSeekerDashboardPage = () => {
           )}
         </div>
       </div>
+
+      {selectedJobForApply && (
+        <ApplyModal
+          job={selectedJobForApply}
+          onClose={() => setSelectedJobForApply(null)}
+          onSuccess={(jobId) => {
+            setAppliedIds((prev) => {
+              const updated = new Set(prev);
+              updated.add(jobId);
+              localStorage.setItem("appliedJobIds", JSON.stringify(Array.from(updated)));
+              return updated;
+            });
+          }}
+        />
+      )}
     </div>
   );
 };
