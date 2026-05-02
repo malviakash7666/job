@@ -22,7 +22,6 @@ const sequelize = new Sequelize(
   config.password,
   config
 );
-
 // 👉 FIX START
 const files = fs.readdirSync(__dirname).filter((file) => {
   return file !== "index.js" && file.endsWith(".js");
