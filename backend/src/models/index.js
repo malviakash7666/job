@@ -16,13 +16,20 @@ const config = configFile[env];
 const db = {};
 
 // sequelize instance
-const sequelize = new Sequelize(
-  config.database,
-  config.username,
-  config.password,
-  config
-);
-// 👉 FIX START
+const sequelize = process.env.DATABASE_URL
+  ? new Sequelize(process.env.DATABASE_URL, {
+      dialect: "postgres",
+      protocol: "postgres",
+      logging: false,
+      dialectOptions: {
+        ssl: {
+          require: true,
+          rejectUnauthorized: false,
+        },
+      },
+    })
+  : new Sequelize(config.database, config.username, config.password, config);
+
 const files = fs.readdirSync(__dirname).filter((file) => {
   return file !== "index.js" && file.endsWith(".js");
 });

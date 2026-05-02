@@ -27,6 +27,7 @@ production: {
   port: Number(process.env.DB_PORT || 5432),
   dialect: "postgres",
   logging: false,
+  use_env_variable: process.env.DATABASE_URL,
   dialectOptions: {
     ssl: {
       require: true,
