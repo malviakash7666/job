@@ -8,25 +8,25 @@ export async function up(queryInterface, Sequelize) {
       primaryKey: true,
     },
 
-    jobId: {
-      type: Sequelize.UUID,
-      allowNull: false,
-      references: {
-        model: "Jobs", // ⚠️ check your table name
-        key: "id",
-      },
-      onDelete: "CASCADE",
-    },
+   jobId: {
+  type: Sequelize.UUID,
+  allowNull: false,
+  references: {
+    model: "jobs",
+    key: "id",
+  },
+  onDelete: "CASCADE",
+},
 
-    applicantId: {
-      type: Sequelize.UUID,
-      allowNull: false,
-      references: {
-        model: "Users", // ⚠️ check your table name
-        key: "id",
-      },
-      onDelete: "CASCADE",
-    },
+applicantId: {
+  type: Sequelize.UUID,
+  allowNull: false,
+  references: {
+    model: "users",
+    key: "id",
+  },
+  onDelete: "CASCADE",
+},
 
     fullName: {
       type: Sequelize.STRING,
