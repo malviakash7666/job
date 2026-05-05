@@ -44,7 +44,7 @@ export interface RefreshTokenResponse {
 /* ================= AXIOS INSTANCE ================= */
 
 const authAPI = axios.create({
-  baseURL: "http://localhost:5000/api/auth",
+  baseURL: "Backend_URL/api/auth",
   withCredentials: true,
 });
 

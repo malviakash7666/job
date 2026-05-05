@@ -67,7 +67,7 @@ interface MyJobsResponse {
 /* ================= API ================= */
 
 const jobsAPI = axios.create({
-  baseURL: "http://localhost:5000/api/v1/jobs",
+  baseURL: "Backend_URL/api/v1/jobs",
   withCredentials: true,
 });
 

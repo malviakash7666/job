@@ -85,7 +85,7 @@ export interface GetJobsParams {
 /* ================= AXIOS INSTANCE ================= */
 
 const jobPostAPI = axios.create({
-  baseURL: "http://localhost:5000/api/job-post",
+  baseURL: "Backend_URL/api/job-post",
   withCredentials: true,
 });
 
