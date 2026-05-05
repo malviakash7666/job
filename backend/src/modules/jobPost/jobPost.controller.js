@@ -1,6 +1,6 @@
 import { Op } from "sequelize";
 import db from "../../models/index.js";
-const { Job, User } = db;
+const { Job, User, JobApplication } = db;
 
 /* ── Pagination helper ── */
 const getPagination = (page, limit) => {
@@ -432,6 +432,11 @@ export const deleteJob = async (req, res) => {
         message: "You are not allowed to delete this job",
       });
     }
+
+    // Delete all related job applications first (to handle foreign key constraint)
+    await JobApplication.destroy({
+      where: { jobId: id }
+    });
 
     await job.destroy();
 

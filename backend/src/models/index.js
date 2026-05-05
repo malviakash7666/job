@@ -10,25 +10,25 @@ const __dirname = path.dirname(__filename);
 // config
 import configFile from "../database/config/config.cjs";
 
-const env = process.env.NODE_ENV || "development";
+const env = (process.env.NODE_ENV || "development").trim();
 const config = configFile[env];
 
 const db = {};
 
-// sequelize instance
+const sequelizeOptions = {
+  ...config,
+  dialectOptions: {
+    ...(config?.dialectOptions || {}),
+    // ssl: {
+    //   require: true,
+    //   rejectUnauthorized: false,
+    // },
+  },
+};
+
 const sequelize = process.env.DATABASE_URL
-  ? new Sequelize(process.env.DATABASE_URL, {
-      dialect: "postgres",
-      protocol: "postgres",
-      logging: false,
-      dialectOptions: {
-        ssl: {
-          require: true,
-          rejectUnauthorized: false,
-        },
-      },
-    })
-  : new Sequelize(config.database, config.username, config.password, config);
+  ? new Sequelize(process.env.DATABASE_URL, sequelizeOptions)
+  : new Sequelize(config.database, config.username, config.password, sequelizeOptions);
 
 const files = fs.readdirSync(__dirname).filter((file) => {
   return file !== "index.js" && file.endsWith(".js");

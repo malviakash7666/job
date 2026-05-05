@@ -6,7 +6,6 @@ import {
   Plus,
   MapPin,
   Filter,
-  Eye,
   Pencil,
   PauseCircle,
   Loader2,
@@ -24,14 +23,16 @@ import {
   Settings,
   Bell,
   ChevronDown,
+  Trash2,
+  AlertTriangle,
 } from "lucide-react";
 import { useAuth } from "../../hooks/useAuth";
 import {
   getAllJobPosts,
   getMyJobPosts,
-  getSingleJobPost,
   createJobPost,
   updateJobPost,
+  deleteJobPost,
   type JobPost,
   type JobStatus,
   type JobType,
@@ -71,10 +72,10 @@ const formatDate = (value?: string | null) => {
 
 const getStatusClasses = (status?: JobStatus) => {
   switch (status) {
-    case "Open":    return "bg-emerald-100 text-emerald-700 border border-emerald-200";
-    case "Paused":  return "bg-amber-100 text-amber-700 border border-amber-200";
-    case "Closed":  return "bg-red-100 text-red-600 border border-red-200";
-    default:        return "bg-gray-100 text-gray-600 border border-gray-200";
+    case "Open":   return "bg-emerald-100 text-emerald-700 border border-emerald-200";
+    case "Paused": return "bg-amber-100 text-amber-700 border border-amber-200";
+    case "Closed": return "bg-red-100 text-red-600 border border-red-200";
+    default:       return "bg-gray-100 text-gray-600 border border-gray-200";
   }
 };
 
@@ -184,6 +185,74 @@ const StatCard: React.FC<{
 );
 
 /* ─────────────────────────────────────────
+   DELETE CONFIRM MODAL
+───────────────────────────────────────── */
+const DeleteConfirmModal: React.FC<{
+  job: JobPost;
+  onConfirm: () => void;
+  onCancel: () => void;
+  isDeleting: boolean;
+}> = ({ job, onConfirm, onCancel, isDeleting }) => (
+  <>
+    <motion.div
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      transition={{ duration: 0.2 }}
+      onClick={onCancel}
+      className="fixed inset-0 z-[80] bg-gray-900/40 backdrop-blur-sm"
+    />
+    <div className="fixed inset-0 z-[90] flex items-center justify-center p-4">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 16 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.97, y: 8 }}
+        transition={{ type: "spring", damping: 32, stiffness: 280 }}
+        onClick={(e) => e.stopPropagation()}
+        className="relative w-full max-w-md overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl"
+      >
+        <div className="h-1 w-full bg-red-500" />
+        <div className="px-6 py-6">
+          <div className="flex items-start gap-4">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-red-100">
+              <AlertTriangle className="h-5 w-5 text-red-600" />
+            </div>
+            <div>
+              <h2 className="text-base font-black text-gray-900">Delete Job Posting</h2>
+              <p className="mt-1 text-sm text-gray-500">
+                Are you sure you want to delete{" "}
+                <span className="font-bold text-gray-800">"{job.title}"</span> at{" "}
+                <span className="font-semibold text-gray-700">{job.companyName}</span>?
+                This action cannot be undone.
+              </p>
+            </div>
+          </div>
+        </div>
+        <div className="flex gap-3 border-t border-gray-100 px-6 py-4">
+          <button
+            onClick={onConfirm}
+            disabled={isDeleting}
+            className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-red-600 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isDeleting ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Trash2 className="h-4 w-4" />
+            )}
+            {isDeleting ? "Deleting…" : "Yes, Delete"}
+          </button>
+          <button
+            onClick={onCancel}
+            disabled={isDeleting}
+            className="flex-1 rounded-xl border border-gray-200 bg-gray-50 px-5 py-2.5 text-sm font-bold text-gray-600 transition hover:bg-gray-100 disabled:opacity-60"
+          >
+            Cancel
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  </>
+);
+
+/* ─────────────────────────────────────────
    MAIN PAGE
 ───────────────────────────────────────── */
 const JobPostDashboardPage: React.FC = () => {
@@ -194,13 +263,12 @@ const JobPostDashboardPage: React.FC = () => {
   /* ── Job list state ── */
   const [jobs, setJobs] = useState<JobPost[]>([]);
   const [loading, setLoading] = useState(true);
-  const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"All" | JobStatus>("All");
 
-  /* ── View drawer ── */
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const [viewingJob, setViewingJob] = useState<JobPost | null>(null);
+  /* ── Delete state ── */
+  const [deleteModalJob, setDeleteModalJob] = useState<JobPost | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   /* ── Create / Edit job modal ── */
   const [formModalOpen, setFormModalOpen] = useState(false);
@@ -247,6 +315,21 @@ const JobPostDashboardPage: React.FC = () => {
     const matchesStatus = statusFilter === "All" || j.status === statusFilter;
     return matchesSearch && matchesStatus;
   }), [jobs, search, statusFilter]);
+
+  /* ─────── Delete handler ─────── */
+  const handleDeleteConfirm = async () => {
+    if (!deleteModalJob) return;
+    setIsDeleting(true);
+    try {
+      await deleteJobPost(deleteModalJob.id);
+      await loadJobs();
+      setDeleteModalJob(null);
+    } catch (err) {
+      console.error("Failed to delete job", err);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   /* ─────── Job form helpers ─────── */
   const setJobField = <K extends keyof JobFormState>(key: K, value: JobFormState[K]) => {
@@ -302,22 +385,7 @@ const JobPostDashboardPage: React.FC = () => {
     }
   };
 
-  /* ─────── Modal / drawer open-close ─────── */
-  const resetDrawer = () => { setDrawerOpen(false); setTimeout(() => setViewingJob(null), 300); };
-
-  const handleOpenView = async (id: string) => {
-    setActionLoadingId(id);
-    try {
-      const res = await getSingleJobPost(id);
-      setViewingJob(res?.data || res);
-      setDrawerOpen(true);
-    } catch (error) {
-      console.error("Failed to open job view", error);
-    } finally {
-      setActionLoadingId(null);
-    }
-  };
-
+  /* ─────── Modal open-close ─────── */
   const openCreateModal = () => {
     setFormModalMode("create");
     setEditingJob(null);
@@ -537,20 +605,6 @@ const JobPostDashboardPage: React.FC = () => {
                         </td>
                         <td className="px-5 py-4">
                           <div className="flex items-center gap-2">
-                            {/* View profile */}
-                            <button
-                              onClick={() => handleOpenView(job.id)}
-                              title="View job details"
-                              className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 text-xs font-bold text-gray-600 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700"
-                            >
-                              {actionLoadingId === job.id ? (
-                                <Loader2 className="h-3 w-3 animate-spin" />
-                              ) : (
-                                <Eye className="h-3 w-3" />
-                              )}
-                              View
-                            </button>
-
                             {/* Applicants page */}
                             <button
                               onClick={() => handleOpenApplicantsPage(job)}
@@ -573,6 +627,15 @@ const JobPostDashboardPage: React.FC = () => {
                             >
                               <Pencil className="h-3.5 w-3.5" />
                             </button>
+
+                            {/* Delete */}
+                            <button
+                              onClick={() => setDeleteModalJob(job)}
+                              title="Delete role"
+                              className="flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 transition hover:border-red-300 hover:bg-red-50 hover:text-red-600"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
                           </div>
                         </td>
                       </motion.tr>
@@ -586,101 +649,16 @@ const JobPostDashboardPage: React.FC = () => {
       </div>
 
       {/* ══════════════════════════════════════════
-          DRAWER — View Job Details
+          DELETE CONFIRM MODAL
       ══════════════════════════════════════════ */}
       <AnimatePresence>
-        {drawerOpen && viewingJob && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              onClick={resetDrawer}
-              className="fixed inset-0 z-[60] bg-gray-900/30 backdrop-blur-sm"
-            />
-            <motion.aside
-              initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }}
-              transition={drawerTransition}
-              className="fixed right-0 top-0 z-[70] flex h-full w-full max-w-2xl flex-col border-l border-gray-200 bg-white shadow-2xl"
-            >
-              <div className="border-b border-gray-100 px-6 pb-5 pt-6">
-                <div className="mb-5 flex items-start justify-between gap-4">
-                  <div className="flex min-w-0 gap-4">
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-white">
-                      <Building2 className="h-5 w-5" />
-                    </div>
-                    <div className="min-w-0">
-                      <h2 className="truncate text-xl font-black text-gray-900">{viewingJob.title}</h2>
-                      <p className="mt-0.5 text-sm font-semibold text-blue-600">{viewingJob.companyName}</p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={resetDrawer}
-                    className="flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 text-gray-400 hover:border-red-200 hover:bg-red-50 hover:text-red-500"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                </div>
-                <div className="grid grid-cols-3 gap-3">
-                  {[
-                    { label: "Location", value: viewingJob.location, isStatus: false },
-                    { label: "Salary", value: formatSalary(viewingJob.salaryMin, viewingJob.salaryMax), isStatus: false },
-                    { label: "Status", value: viewingJob.status, isStatus: true },
-                  ].map(({ label, value, isStatus }) => (
-                    <div key={label} className="rounded-xl border border-gray-100 bg-gray-50 p-4">
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">{label}</p>
-                      {isStatus ? (
-                        <div className="mt-2">
-                          <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-bold ${getStatusClasses(viewingJob.status)}`}>
-                            <span className="h-1.5 w-1.5 rounded-full bg-current opacity-70" />
-                            {value}
-                          </span>
-                        </div>
-                      ) : (
-                        <p className="mt-1.5 text-sm font-semibold text-gray-800">{value}</p>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div className="flex-1 overflow-y-auto px-6 py-6">
-                <div className="space-y-4 pb-8">
-                  <section className="rounded-xl border border-gray-100 bg-gray-50 p-5">
-                    <h3 className="text-[10px] font-black uppercase tracking-wider text-gray-400">Job Overview</h3>
-                    <div className="mt-4 grid grid-cols-2 gap-3">
-                      {[
-                        { label: "Job type", value: viewingJob.jobType },
-                        { label: "Experience level", value: viewingJob.experienceLevel },
-                        { label: "Deadline", value: formatDate(viewingJob.deadline) },
-                        { label: "Company", value: viewingJob.companyName },
-                      ].map(({ label, value }) => (
-                        <div key={label} className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
-                          <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">{label}</p>
-                          <p className="mt-1.5 text-sm font-semibold text-gray-800">{value || "—"}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </section>
-                  <section className="rounded-xl border border-gray-100 bg-white p-5">
-                    <h3 className="text-[10px] font-black uppercase tracking-wider text-gray-400">Description</h3>
-                    <p className="mt-3 whitespace-pre-line text-sm leading-7 text-gray-600">
-                      {viewingJob.description || "No description available."}
-                    </p>
-                  </section>
-                  {viewingJob.requirements && (
-                    <section className="rounded-xl border border-gray-100 bg-white p-5">
-                      <h3 className="text-[10px] font-black uppercase tracking-wider text-gray-400">Requirements</h3>
-                      <p className="mt-3 whitespace-pre-line text-sm leading-7 text-gray-600">{viewingJob.requirements}</p>
-                    </section>
-                  )}
-                  {viewingJob.responsibilities && (
-                    <section className="rounded-xl border border-gray-100 bg-white p-5">
-                      <h3 className="text-[10px] font-black uppercase tracking-wider text-gray-400">Responsibilities</h3>
-                      <p className="mt-3 whitespace-pre-line text-sm leading-7 text-gray-600">{viewingJob.responsibilities}</p>
-                    </section>
-                  )}
-                </div>
-              </div>
-            </motion.aside>
-          </>
+        {deleteModalJob && (
+          <DeleteConfirmModal
+            job={deleteModalJob}
+            onConfirm={handleDeleteConfirm}
+            onCancel={() => !isDeleting && setDeleteModalJob(null)}
+            isDeleting={isDeleting}
+          />
         )}
       </AnimatePresence>
 

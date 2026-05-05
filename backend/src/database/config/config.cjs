@@ -29,10 +29,10 @@ production: {
   logging: false,
   use_env_variable: process.env.DATABASE_URL,
   dialectOptions: {
-    ssl: {
-      require: true,
-      rejectUnauthorized: false,
-    },
+    // ssl: {
+    //   require: true,
+    //   rejectUnauthorized: false,
+    // },
   },
 },
 };
