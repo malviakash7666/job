@@ -11,7 +11,7 @@ import {
   Loader2,
   LogOut,
   Users,
-  Building2,
+
   TrendingUp,
   X,
   Clock3,
@@ -50,7 +50,7 @@ type ModalMode = "create" | "edit";
 /* ─────────────────────────────────────────
    HELPERS
 ───────────────────────────────────────── */
-const drawerTransition: any = { type: "spring", damping: 28, stiffness: 260 };
+
 const modalTransition: any = { type: "spring", damping: 32, stiffness: 280 };
 
 const formatSalary = (min?: number | null, max?: number | null) => {

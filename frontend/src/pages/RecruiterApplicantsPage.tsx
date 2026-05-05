@@ -98,13 +98,13 @@ const formatDate = (date?: string) => {
   });
 };
 
-const formatSalary = (min?: number | null, max?: number | null) => {
-  if (!min && !max) return "Not disclosed";
-  if (min && max)
-    return `₹${min.toLocaleString("en-IN")} – ₹${max.toLocaleString("en-IN")}`;
-  if (min) return `From ₹${min.toLocaleString("en-IN")}`;
-  return `Up to ₹${max?.toLocaleString("en-IN")}`;
-};
+// const formatSalary = (min?: number | null, max?: number | null) => {
+//   if (!min && !max) return "Not disclosed";
+//   if (min && max)
+//     return `₹${min.toLocaleString("en-IN")} – ₹${max.toLocaleString("en-IN")}`;
+//   if (min) return `From ₹${min.toLocaleString("en-IN")}`;
+//   return `Up to ₹${max?.toLocaleString("en-IN")}`;
+// };
 
 const ALL_STATUSES: JobApplicationStatus[] = [
   "Applied",
