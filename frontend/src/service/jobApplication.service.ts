@@ -66,8 +66,10 @@ export interface ApiResponse<T> {
 
 /* ================= AXIOS INSTANCE ================= */
 
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3000";
+
 const jobApplicationAPI = axios.create({
-  baseURL: "Backend_URL/api/v1/job-applications",
+  baseURL: `${BACKEND_URL}/api/v1/job-applications`,
   withCredentials: true,
 });
 

@@ -84,8 +84,10 @@ export interface GetJobsParams {
 
 /* ================= AXIOS INSTANCE ================= */
 
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3000";
+
 const jobPostAPI = axios.create({
-  baseURL: "Backend_URL/api/job-post",
+  baseURL: `${BACKEND_URL}/api/job-post`,
   withCredentials: true,
 });
 

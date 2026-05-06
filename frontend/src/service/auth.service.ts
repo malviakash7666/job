@@ -43,8 +43,10 @@ export interface RefreshTokenResponse {
 
 /* ================= AXIOS INSTANCE ================= */
 
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3000";
+
 const authAPI = axios.create({
-  baseURL: "Backend_URL/api/auth",
+  baseURL: `${BACKEND_URL}/api/auth`,
   withCredentials: true,
 });
 
