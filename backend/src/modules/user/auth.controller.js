@@ -15,14 +15,24 @@ const ALL_ROLES = ["job_poster", "job_seeker", "admin"];
 
 /* ── Shared cookie config ── */
 const getCookieOptions = () => {
-  const isProd = process.env.NODE_ENV === "production";
-
+  // SameSite=None requires Secure for cross-site cookies.
+  // Localhost is treated as a secure context in modern browsers.
   return {
     httpOnly: true,
-    secure: isProd,
+    secure: true,
     sameSite: "none", // Required for cross-origin requests from React dev server
     path: "/",
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+  };
+};
+
+const getAccessCookieOptions = () => {
+  return {
+    httpOnly: true,
+    secure: true,
+    sameSite: "none",
+    path: "/",
+    maxAge: 15 * 60 * 1000, // 15 minutes
   };
 };
 
@@ -78,6 +88,7 @@ export const registerUser = async (req, res) => {
     const refreshToken = generateRefreshToken(newUser);
 
     res.cookie("refreshToken", refreshToken, getCookieOptions());
+    res.cookie("accessToken", accessToken, getAccessCookieOptions());
 
     return res.status(201).json({
       success: true,
@@ -150,6 +161,7 @@ export const loginUser = async (req, res) => {
     const refreshToken = generateRefreshToken(user);
 
     res.cookie("refreshToken", refreshToken, getCookieOptions());
+    res.cookie("accessToken", accessToken, getAccessCookieOptions());
 
     return res.status(200).json({
       success: true,
@@ -326,6 +338,12 @@ export const logoutUser = async (req, res) => {
       sameSite: "none",
       path: "/",
     });
+    res.clearCookie("accessToken", {
+      httpOnly: true,
+      secure: isProd,
+      sameSite: "none",
+      path: "/",
+    });
 
     return res.status(200).json({
       success: true,
@@ -378,6 +396,8 @@ export const refreshAccessToken = async (req, res) => {
     }
 
     const newAccessToken = generateAccessToken(user);
+
+    res.cookie("accessToken", newAccessToken, getAccessCookieOptions());
 
     return res.status(200).json({
       success: true,

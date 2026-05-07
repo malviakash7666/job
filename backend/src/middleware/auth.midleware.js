@@ -9,16 +9,27 @@ import jwt from "jsonwebtoken";
 export const protect = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
-    // Debug: show header when missing to aid troubleshooting
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      console.debug("protect middleware — missing/invalid Authorization header:", authHeader);
+    const cookieToken = req.cookies?.accessToken;
+
+    let token;
+
+    if (authHeader?.startsWith("Bearer ")) {
+      token = authHeader.split(" ")[1];
+    } else if (cookieToken) {
+      token = cookieToken;
+    }
+
+    if (!token) {
+      console.debug(
+        "protect middleware — missing/invalid Authorization header or accessToken cookie:",
+        authHeader,
+        cookieToken
+      );
       return res.status(401).json({
         success: false,
         message: "No token provided. Please log in.",
       });
     }
-
-    const token = authHeader.split(" ")[1];
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
