@@ -332,18 +332,15 @@ export const logoutUser = async (req, res) => {
   try {
     const isProd = process.env.NODE_ENV === "production";
 
-    res.clearCookie("refreshToken", {
+    const cookieOptions = {
       httpOnly: true,
       secure: isProd,
-      sameSite: "none",
+      sameSite: isProd ? "none" : "lax",
       path: "/",
-    });
-    res.clearCookie("accessToken", {
-      httpOnly: true,
-      secure: isProd,
-      sameSite: "none",
-      path: "/",
-    });
+    };
+
+    res.clearCookie("refreshToken", cookieOptions);
+    res.clearCookie("accessToken", cookieOptions);
 
     return res.status(200).json({
       success: true,

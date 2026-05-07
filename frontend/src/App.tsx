@@ -29,87 +29,75 @@ const getRoleRedirect = (role: string | undefined) => {
 const App = () => {
   const { user, loading } = useAuth();
 
-  return (
-    <Routes>
-      <Route
-        path="/"
-        element={
-          loading ? (
-            <div />
-          ) : user ? (
-            <Navigate to={getRoleRedirect((user as any)?.role)} replace />
-          ) : (
-            <HomePage />
-          )
-        }
-      />
+return (
+  <Routes>
+    <Route
+      path="/"
+      element={loading ? <div /> : <HomePage />}
+    />
 
-      <Route
-        path="/login"
-        element={
-          loading ? (
-            <div />
-          ) : user ? (
-            <Navigate to={getRoleRedirect((user as any)?.role)} replace />
-          ) : (
-            <LoginPage />
-          )
-        }
-      />
+    <Route
+      path="/login"
+      element={
+        loading ? (
+          <div />
+        ) : user ? (
+          <Navigate to={getRoleRedirect((user as any)?.role)} replace />
+        ) : (
+          <LoginPage />
+        )
+      }
+    />
 
-      <Route
-        path="/signup"
-        element={
-          loading ? (
-            <div />
-          ) : user ? (
-            <Navigate to={getRoleRedirect((user as any)?.role)} replace />
-          ) : (
-            <SignupPage />
-          )
-        }
-      />
-           <Route path="/companies" element={<CompaniesPage />} />
-      <Route path="/jobs" element={<JobsPage />} />
-      <Route path="/categories" element={<CategoriesPage />} />
-      <Route path="/pricing" element={<PricingPage />} />
-      <Route path="/about" element={<AboutPage />} />
+    <Route
+      path="/signup"
+      element={
+        loading ? (
+          <div />
+        ) : user ? (
+          <Navigate to={getRoleRedirect((user as any)?.role)} replace />
+        ) : (
+          <SignupPage />
+        )
+      }
+    />
 
+    <Route path="/companies" element={<CompaniesPage />} />
+    <Route path="/jobs" element={<JobsPage />} />
+    <Route path="/categories" element={<CategoriesPage />} />
+    <Route path="/pricing" element={<PricingPage />} />
+    <Route path="/about" element={<AboutPage />} />
 
-     
+    <Route
+      path="/dashboard/jobs"
+      element={
+        <ProtectedRoute allowedRoles={["job_poster", "admin"]}>
+          <JobPostDashboardPage />
+        </ProtectedRoute>
+      }
+    />
 
-      {/* Job Poster Dashboard */}
-      <Route
-        path="/dashboard/jobs"
-        element={
-          <ProtectedRoute allowedRoles={["job_poster", "admin"]}>
-            <JobPostDashboardPage />
-          </ProtectedRoute>
-        }
-      />
+    <Route
+      path="/dashboard/jobs/:jobId"
+      element={
+        <ProtectedRoute allowedRoles={["job_poster", "admin"]}>
+          <RecruiterApplicantsPage />
+        </ProtectedRoute>
+      }
+    />
 
-      <Route
-        path="/dashboard/jobs/:jobId"
-        element={
-          <ProtectedRoute allowedRoles={["job_poster", "admin"]}>
-            <RecruiterApplicantsPage />
-          </ProtectedRoute>
-        }
-      />
+    <Route
+      path="/dashboard"
+      element={
+        <ProtectedRoute allowedRoles={["job_seeker"]}>
+          <JobSeekerDashboardPage />
+        </ProtectedRoute>
+      }
+    />
 
-      {/* Job Seeker Dashboard */}
-      <Route
-        path="/dashboard"
-        element={
-          <ProtectedRoute allowedRoles={["job_seeker"]}>
-            <JobSeekerDashboardPage />
-          </ProtectedRoute>
-        }
-      />
-
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
-  );
+    <Route path="*" element={<Navigate to="/" replace />} />
+  </Routes>
+);
 };
 
 export default App;

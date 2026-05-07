@@ -7,24 +7,24 @@ import {
   MapPin,
   Filter,
   Pencil,
-  PauseCircle,
   Loader2,
   LogOut,
   Users,
 
-  TrendingUp,
   X,
   Clock3,
   LayoutDashboard,
   ClipboardList,
   UserCheck,
-  CalendarCheck,
-  BarChart2,
+  Building2,
   Settings,
   Bell,
   ChevronDown,
   Trash2,
   AlertTriangle,
+  Star,
+  FileText,
+  ChevronRight,
 } from "lucide-react";
 import { useAuth } from "../../hooks/useAuth";
 import {
@@ -40,7 +40,7 @@ import {
   type CreateJobPostPayload,
   type UpdateJobPostPayload,
 } from "../../service/jobPost.service";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 /* ─────────────────────────────────────────
    TYPES
@@ -50,24 +50,30 @@ type ModalMode = "create" | "edit";
 /* ─────────────────────────────────────────
    HELPERS
 ───────────────────────────────────────── */
-
 const modalTransition: any = { type: "spring", damping: 32, stiffness: 280 };
 
-const formatSalary = (min?: number | null, max?: number | null) => {
-  if (!min && !max) return "Not disclosed";
-  if (min && max)
-    return `₹${min.toLocaleString("en-IN")} – ₹${max.toLocaleString("en-IN")}`;
-  if (min) return `From ₹${min.toLocaleString("en-IN")}`;
-  return `Up to ₹${max?.toLocaleString("en-IN")}`;
-};
+// const formatSalary = (min?: number | null, max?: number | null) => {
+//   if (!min && !max) return "Not disclosed";
+//   if (min && max) return `₹${min.toLocaleString("en-IN")} – ₹${max.toLocaleString("en-IN")}`;
+//   if (min) return `From ₹${min.toLocaleString("en-IN")}`;
+//   return `Up to ₹${max?.toLocaleString("en-IN")}`;
+// };
 
-const formatDate = (value?: string | null) => {
+// const formatDate = (value?: string | null) => {
+//   if (!value) return "—";
+//   return new Date(value).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+// };
+
+const timeAgo = (value?: string | null): string => {
   if (!value) return "—";
-  return new Date(value).toLocaleDateString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
+  const diff = Date.now() - new Date(value).getTime();
+  const days = Math.floor(diff / 86_400_000);
+  if (days === 0) return "Today";
+  if (days === 1) return "1 day ago";
+  if (days < 7) return `${days} days ago`;
+  if (days < 14) return "1 week ago";
+  if (days < 30) return `${Math.floor(days / 7)} weeks ago`;
+  return `${Math.floor(days / 30)} months ago`;
 };
 
 const getStatusClasses = (status?: JobStatus) => {
@@ -79,23 +85,27 @@ const getStatusClasses = (status?: JobStatus) => {
   }
 };
 
+/** Color-coded square icon per job type — matches the reference image */
+const JobTypeIcon: React.FC<{ type?: string }> = ({ type }) => {
+  const base = "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-white";
+  switch (type) {
+    case "Full-Time":  return <div className={`${base} bg-blue-500`}><Briefcase className="h-4 w-4" /></div>;
+    case "Part-Time":  return <div className={`${base} bg-violet-500`}><Clock3 className="h-4 w-4" /></div>;
+    case "Internship": return <div className={`${base} bg-amber-500`}><FileText className="h-4 w-4" /></div>;
+    case "Contract":   return <div className={`${base} bg-teal-500`}><ClipboardList className="h-4 w-4" /></div>;
+    case "Remote":     return <div className={`${base} bg-pink-500`}><MapPin className="h-4 w-4" /></div>;
+    default:           return <div className={`${base} bg-red-400`}><Briefcase className="h-4 w-4" /></div>;
+  }
+};
+
 /* ─────────────────────────────────────────
-   JOB FORM STATE (create / edit)
+   JOB FORM STATE
 ───────────────────────────────────────── */
 interface JobFormState {
-  title: string;
-  description: string;
-  companyName: string;
-  location: string;
-  jobType: JobType;
-  experienceLevel: ExperienceLevel;
-  salaryMin: string;
-  salaryMax: string;
-  skills: string;
-  requirements: string;
-  responsibilities: string;
-  deadline: string;
-  status: JobStatus;
+  title: string; description: string; companyName: string; location: string;
+  jobType: JobType; experienceLevel: ExperienceLevel;
+  salaryMin: string; salaryMax: string; skills: string;
+  requirements: string; responsibilities: string; deadline: string; status: JobStatus;
 }
 
 const defaultJobForm: JobFormState = {
@@ -106,30 +116,23 @@ const defaultJobForm: JobFormState = {
 };
 
 const jobFromPost = (job: JobPost): JobFormState => ({
-  title: job.title || "",
-  description: job.description || "",
-  companyName: job.companyName || "",
-  location: job.location || "",
-  jobType: job.jobType || "Full-Time",
-  experienceLevel: job.experienceLevel || "Fresher",
+  title: job.title || "", description: job.description || "",
+  companyName: job.companyName || "", location: job.location || "",
+  jobType: job.jobType || "Full-Time", experienceLevel: job.experienceLevel || "Fresher",
   salaryMin: job.salaryMin != null ? String(job.salaryMin) : "",
   salaryMax: job.salaryMax != null ? String(job.salaryMax) : "",
   skills: (job.skills || []).join(", "),
-  requirements: job.requirements || "",
-  responsibilities: job.responsibilities || "",
+  requirements: job.requirements || "", responsibilities: job.responsibilities || "",
   deadline: job.deadline ? job.deadline.substring(0, 10) : "",
   status: job.status || "Open",
 });
 
 /* ─────────────────────────────────────────
-   REUSABLE FIELD WRAPPER
+   FIELD WRAPPER
 ───────────────────────────────────────── */
-const Field: React.FC<{
-  label: string;
-  required?: boolean;
-  children: React.ReactNode;
-  hint?: string;
-}> = ({ label, required, children, hint }) => (
+const Field: React.FC<{ label: string; required?: boolean; children: React.ReactNode; hint?: string }> = ({
+  label, required, children, hint,
+}) => (
   <div className="flex flex-col gap-1.5">
     <label className="text-xs font-bold uppercase tracking-wider text-gray-500">
       {label}{required && <span className="ml-1 text-red-500">*</span>}
@@ -149,63 +152,36 @@ const selectCls =
 /* ─────────────────────────────────────────
    SIDEBAR NAV ITEM
 ───────────────────────────────────────── */
-const NavItem: React.FC<{ icon: React.ElementType; label: string; active?: boolean }> = ({
-  icon: Icon, label, active,
-}) => (
+const NavItem: React.FC<{
+  icon: React.ElementType; label: string; active?: boolean; onClick?: () => void;
+}> = ({ icon: Icon, label, active, onClick }) => (
   <button
-    className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold transition-all ${
+    onClick={onClick}
+    className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-all ${
       active ? "bg-blue-600 text-white shadow-sm" : "text-gray-500 hover:bg-gray-100 hover:text-gray-800"
     }`}
   >
-    <Icon className="h-4.5 w-4.5 shrink-0" />
+    <Icon className="h-4 w-4 shrink-0" />
     {label}
   </button>
-);
-
-/* ─────────────────────────────────────────
-   STAT CARD
-───────────────────────────────────────── */
-const StatCard: React.FC<{
-  label: string; value: number; icon: React.ElementType; accent: string; delay: number;
-}> = ({ label, value, icon: Icon, accent, delay }) => (
-  <motion.div
-    initial={{ opacity: 0, y: 12 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ delay, duration: 0.35 }}
-    className="flex items-center gap-4 rounded-xl border border-gray-200 bg-white px-5 py-4 shadow-sm"
-  >
-    <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${accent}`}>
-      <Icon className="h-5 w-5" />
-    </div>
-    <div>
-      <p className="text-2xl font-black text-gray-900">{value}</p>
-      <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">{label}</p>
-    </div>
-  </motion.div>
 );
 
 /* ─────────────────────────────────────────
    DELETE CONFIRM MODAL
 ───────────────────────────────────────── */
 const DeleteConfirmModal: React.FC<{
-  job: JobPost;
-  onConfirm: () => void;
-  onCancel: () => void;
-  isDeleting: boolean;
+  job: JobPost; onConfirm: () => void; onCancel: () => void; isDeleting: boolean;
 }> = ({ job, onConfirm, onCancel, isDeleting }) => (
   <>
     <motion.div
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      transition={{ duration: 0.2 }}
-      onClick={onCancel}
+      transition={{ duration: 0.2 }} onClick={onCancel}
       className="fixed inset-0 z-[80] bg-gray-900/40 backdrop-blur-sm"
     />
     <div className="fixed inset-0 z-[90] flex items-center justify-center p-4">
       <motion.div
-        initial={{ opacity: 0, scale: 0.95, y: 16 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.97, y: 8 }}
-        transition={{ type: "spring", damping: 32, stiffness: 280 }}
+        initial={{ opacity: 0, scale: 0.95, y: 16 }} animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.97, y: 8 }} transition={modalTransition}
         onClick={(e) => e.stopPropagation()}
         className="relative w-full max-w-md overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl"
       >
@@ -228,20 +204,14 @@ const DeleteConfirmModal: React.FC<{
         </div>
         <div className="flex gap-3 border-t border-gray-100 px-6 py-4">
           <button
-            onClick={onConfirm}
-            disabled={isDeleting}
+            onClick={onConfirm} disabled={isDeleting}
             className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-red-600 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {isDeleting ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Trash2 className="h-4 w-4" />
-            )}
+            {isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
             {isDeleting ? "Deleting…" : "Yes, Delete"}
           </button>
           <button
-            onClick={onCancel}
-            disabled={isDeleting}
+            onClick={onCancel} disabled={isDeleting}
             className="flex-1 rounded-xl border border-gray-200 bg-gray-50 px-5 py-2.5 text-sm font-bold text-gray-600 transition hover:bg-gray-100 disabled:opacity-60"
           >
             Cancel
@@ -253,6 +223,16 @@ const DeleteConfirmModal: React.FC<{
 );
 
 /* ─────────────────────────────────────────
+   MOCK TOP APPLICANTS  (swap with real API)
+───────────────────────────────────────── */
+const MOCK_APPLICANTS = [
+  { id: "1", name: "John Doe",      role: "Frontend Developer",   color: "bg-orange-300" },
+  { id: "2", name: "Jane Smith",    role: "UI/UX Designer",        color: "bg-blue-300"   },
+  { id: "3", name: "Mike Johnson",  role: "Full Stack Developer",  color: "bg-teal-400"   },
+  { id: "4", name: "Sarah Wilson",  role: "Frontend Developer",    color: "bg-pink-400"   },
+];
+
+/* ─────────────────────────────────────────
    MAIN PAGE
 ───────────────────────────────────────── */
 const JobPostDashboardPage: React.FC = () => {
@@ -260,29 +240,24 @@ const JobPostDashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const isAdmin = (user as any)?.role === "admin";
 
-  /* ── Job list state ── */
-  const [jobs, setJobs] = useState<JobPost[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"All" | JobStatus>("All");
-
-  /* ── Delete state ── */
+  /* ── state ── */
+  const [jobs, setJobs]                     = useState<JobPost[]>([]);
+  const [loading, setLoading]               = useState(true);
+  const [search, setSearch]                 = useState("");
+  const [statusFilter, setStatusFilter]     = useState<"All" | JobStatus>("All");
   const [deleteModalJob, setDeleteModalJob] = useState<JobPost | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
-
-  /* ── Create / Edit job modal ── */
-  const [formModalOpen, setFormModalOpen] = useState(false);
-  const [formModalMode, setFormModalMode] = useState<ModalMode>("create");
-  const [editingJob, setEditingJob] = useState<JobPost | null>(null);
-  const [jobForm, setJobForm] = useState<JobFormState>(defaultJobForm);
-  const [jobFormErrors, setJobFormErrors] = useState<Partial<Record<keyof JobFormState, string>>>({});
+  const [isDeleting, setIsDeleting]         = useState(false);
+  const [formModalOpen, setFormModalOpen]   = useState(false);
+  const [formModalMode, setFormModalMode]   = useState<ModalMode>("create");
+  const [editingJob, setEditingJob]         = useState<JobPost | null>(null);
+  const [jobForm, setJobForm]               = useState<JobFormState>(defaultJobForm);
+  const [jobFormErrors, setJobFormErrors]   = useState<Partial<Record<keyof JobFormState, string>>>({});
   const [jobFormSubmitting, setJobFormSubmitting] = useState(false);
-  const [jobFormError, setJobFormError] = useState<string | null>(null);
-
-  /* ── Misc ── */
+  const [jobFormError, setJobFormError]     = useState<string | null>(null);
   const [applicantsLoadingRowId, setApplicantsLoadingRowId] = useState<string | null>(null);
+  const [activeNav, setActiveNav]           = useState("Dashboard");
 
-  /* ─────── Data ─────── */
+  /* ── data ── */
   const loadJobs = async () => {
     try {
       setLoading(true);
@@ -299,10 +274,10 @@ const JobPostDashboardPage: React.FC = () => {
   useEffect(() => { loadJobs(); }, []);
 
   const stats = useMemo(() => ({
-    total: jobs.length,
-    open: jobs.filter((j) => j.status === "Open").length,
-    paused: jobs.filter((j) => j.status === "Paused").length,
-    closed: jobs.filter((j) => j.status === "Closed").length,
+    active:            jobs.filter((j) => j.status === "Open").length,
+    // totalApplications: jobs.reduce((s, j) => s + (j.applicantCount ?? 0), 0),
+    shortlisted:       jobs.filter((j) => j.status === "Paused").length,
+    hired:             jobs.filter((j) => j.status === "Closed").length,
   }), [jobs]);
 
   const filteredJobs = useMemo(() => jobs.filter((j) => {
@@ -310,13 +285,11 @@ const JobPostDashboardPage: React.FC = () => {
     const matchesSearch =
       !q ||
       [j.title, j.companyName, j.location, j.jobType, j.experienceLevel]
-        .filter(Boolean)
-        .some((v) => v!.toLowerCase().includes(q));
-    const matchesStatus = statusFilter === "All" || j.status === statusFilter;
-    return matchesSearch && matchesStatus;
+        .filter(Boolean).some((v) => v!.toLowerCase().includes(q));
+    return matchesSearch && (statusFilter === "All" || j.status === statusFilter);
   }), [jobs, search, statusFilter]);
 
-  /* ─────── Delete handler ─────── */
+  /* ── delete ── */
   const handleDeleteConfirm = async () => {
     if (!deleteModalJob) return;
     setIsDeleting(true);
@@ -331,31 +304,28 @@ const JobPostDashboardPage: React.FC = () => {
     }
   };
 
-  /* ─────── Job form helpers ─────── */
+  /* ── form helpers ── */
   const setJobField = <K extends keyof JobFormState>(key: K, value: JobFormState[K]) => {
-    setJobForm((prev) => ({ ...prev, [key]: value }));
-    if (jobFormErrors[key]) setJobFormErrors((prev) => ({ ...prev, [key]: undefined }));
+    setJobForm((p) => ({ ...p, [key]: value }));
+    if (jobFormErrors[key]) setJobFormErrors((p) => ({ ...p, [key]: undefined }));
   };
 
   const validateJobForm = (): boolean => {
-    const errors: Partial<Record<keyof JobFormState, string>> = {};
-    if (!jobForm.title.trim()) errors.title = "Title is required";
-    if (!jobForm.description.trim()) errors.description = "Description is required";
-    if (!jobForm.companyName.trim()) errors.companyName = "Company name is required";
-    if (!jobForm.location.trim()) errors.location = "Location is required";
-    if (jobForm.salaryMin && isNaN(Number(jobForm.salaryMin))) errors.salaryMin = "Must be a number";
-    if (jobForm.salaryMax && isNaN(Number(jobForm.salaryMax))) errors.salaryMax = "Must be a number";
-    setJobFormErrors(errors);
-    return Object.keys(errors).length === 0;
+    const e: Partial<Record<keyof JobFormState, string>> = {};
+    if (!jobForm.title.trim())       e.title       = "Title is required";
+    if (!jobForm.description.trim()) e.description = "Description is required";
+    if (!jobForm.companyName.trim()) e.companyName = "Company name is required";
+    if (!jobForm.location.trim())    e.location    = "Location is required";
+    if (jobForm.salaryMin && isNaN(Number(jobForm.salaryMin))) e.salaryMin = "Must be a number";
+    if (jobForm.salaryMax && isNaN(Number(jobForm.salaryMax))) e.salaryMax = "Must be a number";
+    setJobFormErrors(e);
+    return Object.keys(e).length === 0;
   };
 
   const buildJobPayload = (): CreateJobPostPayload => ({
-    title: jobForm.title.trim(),
-    description: jobForm.description.trim(),
-    companyName: jobForm.companyName.trim(),
-    location: jobForm.location.trim(),
-    jobType: jobForm.jobType,
-    experienceLevel: jobForm.experienceLevel,
+    title: jobForm.title.trim(), description: jobForm.description.trim(),
+    companyName: jobForm.companyName.trim(), location: jobForm.location.trim(),
+    jobType: jobForm.jobType, experienceLevel: jobForm.experienceLevel,
     salaryMin: jobForm.salaryMin ? Number(jobForm.salaryMin) : null,
     salaryMax: jobForm.salaryMax ? Number(jobForm.salaryMax) : null,
     skills: jobForm.skills ? jobForm.skills.split(",").map((s) => s.trim()).filter(Boolean) : [],
@@ -385,59 +355,65 @@ const JobPostDashboardPage: React.FC = () => {
     }
   };
 
-  /* ─────── Modal open-close ─────── */
   const openCreateModal = () => {
-    setFormModalMode("create");
-    setEditingJob(null);
-    setJobForm(defaultJobForm);
-    setJobFormErrors({});
-    setJobFormError(null);
-    setFormModalOpen(true);
+    setFormModalMode("create"); setEditingJob(null); setJobForm(defaultJobForm);
+    setJobFormErrors({}); setJobFormError(null); setFormModalOpen(true);
   };
-
   const openEditModal = (job: JobPost) => {
-    setFormModalMode("edit");
-    setEditingJob(job);
-    setJobForm(jobFromPost(job));
-    setJobFormErrors({});
-    setJobFormError(null);
-    setFormModalOpen(true);
+    setFormModalMode("edit"); setEditingJob(job); setJobForm(jobFromPost(job));
+    setJobFormErrors({}); setJobFormError(null); setFormModalOpen(true);
   };
-
   const closeJobFormModal = () => {
     setFormModalOpen(false);
     setTimeout(() => { setEditingJob(null); setJobFormError(null); }, 260);
   };
-
   const handleOpenApplicantsPage = (job: JobPost) => {
     setApplicantsLoadingRowId(job.id);
     navigate(`/dashboard/jobs/${job.id}`);
   };
+
+  const companyName = (user as any)?.companyName || (user as any)?.name || "TechCorp";
+  const userInitial = (user as any)?.name?.charAt(0)?.toUpperCase() || "U";
 
   /* ─────── RENDER ─────── */
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50 font-sans text-gray-900">
 
       {/* ══ SIDEBAR ══ */}
-      <aside className="flex w-56 shrink-0 flex-col border-r border-gray-200 bg-white px-3 py-5">
-        <div className="mb-8 flex items-center gap-2.5 px-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600">
-            <Briefcase className="h-4 w-4 text-white" />
+      <aside className="flex w-56 shrink-0 flex-col border-r border-gray-100 bg-white px-3 py-5">
+        {/* Logo */}
+        <div className="mb-7 flex items-center gap-2 px-2">
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600">
+            <Briefcase className="h-3.5 w-3.5 text-white" />
           </div>
-          <span className="text-base font-black tracking-tight text-gray-900">Job Portal</span>
+          <Link to="/" className="text-sm font-black tracking-tight text-gray-900">JobPortal</Link>
         </div>
-        <nav className="flex flex-col gap-1">
-          <NavItem icon={LayoutDashboard} label="Dashboard" active />
-          <NavItem icon={ClipboardList} label="Job Postings" />
-          <NavItem icon={UserCheck} label="Candidates" />
-          <NavItem icon={CalendarCheck} label="Interviews" />
-          <NavItem icon={BarChart2} label="Reports" />
-          <NavItem icon={Settings} label="Settings" />
+
+        {/* Nav */}
+        <nav className="flex flex-col gap-0.5">
+          {[
+            { icon: LayoutDashboard, label: "Dashboard" },
+            { icon: ClipboardList,   label: "My Jobs" },
+            { icon: UserCheck,       label: "Applicants" },
+            { icon: Plus,            label: "Post a Job", action: openCreateModal },
+            { icon: Building2,       label: "Company Profile" },
+            { icon: Settings,        label: "Settings" },
+          ].map((item) => (
+            <NavItem
+              key={item.label}
+              icon={item.icon}
+              label={item.label}
+              active={activeNav === item.label}
+              onClick={item.action ?? (() => setActiveNav(item.label))}
+            />
+          ))}
         </nav>
+
+        {/* Logout */}
         <div className="mt-auto pt-4">
           <button
             onClick={() => logout()}
-            className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold text-gray-400 transition-all hover:bg-red-50 hover:text-red-500"
+            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-gray-400 transition hover:bg-red-50 hover:text-red-500"
           >
             <LogOut className="h-4 w-4" />
             Logout
@@ -445,212 +421,245 @@ const JobPostDashboardPage: React.FC = () => {
         </div>
       </aside>
 
-      {/* ══ MAIN CONTENT ══ */}
+      {/* ══ MAIN AREA ══ */}
       <div className="flex flex-1 flex-col overflow-hidden">
-        {/* Top bar */}
-        <header className="flex h-14 shrink-0 items-center justify-between border-b border-gray-200 bg-white px-6">
-          <h1 className="text-base font-black text-gray-900">Recruiter Dashboard</h1>
-          <div className="flex items-center gap-3">
-            <div className="relative hidden sm:block">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-              <input
-                placeholder="Search…"
-                className="h-9 w-56 rounded-lg border border-gray-200 bg-gray-50 pl-9 pr-3 text-sm outline-none transition focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-100"
-              />
+
+        {/* Top bar — hidden visually in the reference; kept minimal */}
+        <header className="flex h-12 shrink-0 items-center justify-end gap-2 border-b border-gray-100 bg-white px-5">
+          <button className="relative flex h-8 w-8 items-center justify-center rounded-xl border border-gray-200 text-gray-400 hover:bg-gray-50">
+            <Bell className="h-4 w-4" />
+            <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-red-500 ring-1 ring-white" />
+          </button>
+          <button className="flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50">
+            <div className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-100 text-[10px] font-black text-blue-700">
+              {userInitial}
             </div>
-            <button className="relative flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 hover:bg-gray-50">
-              <Bell className="h-4 w-4" />
-              <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-red-500 ring-1 ring-white" />
-            </button>
-            <button className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm font-semibold text-gray-700 hover:bg-gray-50">
-              <div className="h-6 w-6 rounded-full bg-blue-200 flex items-center justify-center text-blue-700 text-xs font-black">
-                {(user as any)?.name?.charAt(0)?.toUpperCase() || "U"}
-              </div>
-              {(user as any)?.name || "User"}
-              <ChevronDown className="h-3.5 w-3.5 text-gray-400" />
-            </button>
-          </div>
+            {(user as any)?.name || "User"}
+            <ChevronDown className="h-3 w-3 text-gray-400" />
+          </button>
         </header>
 
-        {/* Scrollable body */}
-        <div className="flex-1 overflow-y-auto px-6 py-6">
-          <div className="mb-5 flex items-center justify-between">
-            <div>
-              <h2 className="text-xl font-black text-gray-900">Job Applications</h2>
-              <p className="mt-0.5 text-sm text-gray-500">Manage your open roles and review candidates.</p>
-            </div>
-            <button
-              onClick={openCreateModal}
-              className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-blue-700"
-            >
-              <Plus className="h-4 w-4" />
-              Post New Role
-            </button>
-          </div>
+        {/* Two-column body */}
+        <div className="flex flex-1 overflow-hidden">
 
-          {/* Stats */}
-          <div className="mb-6 grid grid-cols-2 gap-3 xl:grid-cols-4">
-            <StatCard label="Total Roles" value={stats.total} icon={Briefcase} accent="bg-blue-50 text-blue-600" delay={0.04} />
-            <StatCard label="Open" value={stats.open} icon={TrendingUp} accent="bg-emerald-50 text-emerald-600" delay={0.08} />
-            <StatCard label="Paused" value={stats.paused} icon={PauseCircle} accent="bg-amber-50 text-amber-600" delay={0.12} />
-            <StatCard label="Closed" value={stats.closed} icon={Clock3} accent="bg-red-50 text-red-500" delay={0.16} />
-          </div>
+          {/* ── LEFT / CENTRE scroll area ── */}
+          <div className="flex-1 overflow-y-auto px-7 py-6">
 
-          {/* Table */}
-          <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-            <div className="flex flex-col gap-3 border-b border-gray-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+            {/* Welcome row */}
+            <div className="mb-5 flex items-start justify-between">
               <div>
-                <p className="text-sm font-bold text-gray-900">Job Listings</p>
-                <p className="text-xs text-gray-400">{filteredJobs.length} role{filteredJobs.length !== 1 ? "s" : ""} found</p>
+                <h1 className="text-2xl font-black text-gray-900">
+                  Welcome back, {companyName}! 👋
+                </h1>
+                <p className="mt-0.5 text-sm text-gray-400">Here's what's happening with your jobs.</p>
               </div>
-              <div className="flex gap-2">
-                <div className="relative">
-                  <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400" />
-                  <input
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Filter by job title…"
-                    className="h-9 w-52 rounded-lg border border-gray-200 bg-gray-50 pl-8 pr-3 text-sm outline-none transition focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-100"
-                  />
-                </div>
-                <div className="relative flex items-center">
-                  <Filter className="pointer-events-none absolute left-3 h-3.5 w-3.5 text-gray-400" />
-                  <select
-                    value={statusFilter}
-                    onChange={(e) => setStatusFilter(e.target.value as any)}
-                    className="h-9 appearance-none rounded-lg border border-gray-200 bg-gray-50 pl-8 pr-6 text-sm font-semibold text-gray-700 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-                  >
-                    <option value="All">All Status</option>
-                    <option value="Open">Open</option>
-                    <option value="Paused">Paused</option>
-                    <option value="Closed">Closed</option>
-                  </select>
-                </div>
-              </div>
+              <button
+                onClick={openCreateModal}
+                className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-blue-700"
+              >
+                <Plus className="h-4 w-4" />
+                Post New Job
+              </button>
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
-                <thead>
-                  <tr className="border-b border-gray-100 bg-gray-50">
-                    {["#", "Candidate / Role", "Applied For", "Details", "Status", "Actions"].map((h) => (
-                      <th key={h} className="px-5 py-3 text-xs font-black uppercase tracking-wider text-gray-400">{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-50">
-                  {loading ? (
-                    <tr>
-                      <td colSpan={6} className="py-20 text-center">
-                        <div className="inline-flex flex-col items-center gap-3">
-                          <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
-                          <p className="text-sm font-semibold text-gray-400">Loading jobs…</p>
-                        </div>
-                      </td>
-                    </tr>
-                  ) : filteredJobs.length === 0 ? (
-                    <tr>
-                      <td colSpan={6} className="py-20 text-center">
-                        <div className="inline-flex flex-col items-center gap-3">
-                          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gray-100 text-gray-400">
-                            <Briefcase className="h-5 w-5" />
-                          </div>
-                          <p className="text-sm font-bold text-gray-700">No roles found</p>
-                          <p className="text-xs text-gray-400">
-                            Try adjusting your filters, or{" "}
-                            <button onClick={openCreateModal} className="font-semibold text-blue-600 underline underline-offset-2">
-                              post a new role
-                            </button>.
-                          </p>
-                        </div>
-                      </td>
-                    </tr>
-                  ) : (
-                    filteredJobs.map((job, idx) => (
-                      <motion.tr
-                        key={job.id}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: idx * 0.025 }}
-                        className="group bg-white transition-colors hover:bg-blue-50/40"
-                      >
-                        <td className="px-5 py-4 text-sm font-semibold text-gray-400">{idx + 1}.</td>
-                        <td className="px-5 py-4">
-                          <div className="flex items-center gap-3">
-                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-100 text-sm font-black text-blue-700">
-                              {job.title?.charAt(0)?.toUpperCase() || "J"}
-                            </div>
-                            <div>
-                              <p className="font-bold text-gray-900">{job.title}</p>
-                              <p className="text-xs text-gray-400">{job.companyName}</p>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-5 py-4">
-                          <p className="font-semibold text-gray-700">{job.jobType}</p>
-                          <div className="mt-0.5 flex items-center gap-1 text-xs text-gray-400">
-                            <MapPin className="h-3 w-3" />
-                            {job.location}
-                          </div>
-                        </td>
-                        <td className="px-5 py-4">
-                          <p className="font-semibold text-gray-700">{formatSalary(job.salaryMin, job.salaryMax)}</p>
-                          <p className="text-xs text-gray-400">Deadline: {formatDate(job.deadline)}</p>
-                        </td>
-                        <td className="px-5 py-4">
-                          <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold ${getStatusClasses(job.status)}`}>
-                            <span className="h-1.5 w-1.5 rounded-full bg-current opacity-70" />
-                            {job.status}
-                          </span>
-                        </td>
-                        <td className="px-5 py-4">
-                          <div className="flex items-center gap-2">
-                            {/* Applicants page */}
-                            <button
-                              onClick={() => handleOpenApplicantsPage(job)}
-                              title="View applicants"
-                              className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-blue-100 bg-blue-50 px-3 text-xs font-bold text-blue-600 transition hover:border-blue-300 hover:bg-blue-100"
-                            >
-                              {applicantsLoadingRowId === job.id ? (
-                                <Loader2 className="h-3 w-3 animate-spin" />
-                              ) : (
-                                <Users className="h-3 w-3" />
-                              )}
-                              <span className="hidden lg:inline">Applicants</span>
-                            </button>
+            {/* ── Stat cards ── */}
+            <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+              {[
+                { icon: Briefcase, iconBg: "bg-blue-100",   iconColor: "text-blue-500",   value: stats.active,            label: "Active Jobs"         },
+                // { icon: Users,     iconBg: "bg-pink-100",   iconColor: "text-pink-500",   value: stats.totalApplications, label: "Total Applications"  },
+                { icon: Star,      iconBg: "bg-violet-100", iconColor: "text-violet-500", value: stats.shortlisted,       label: "Shortlisted"         },
+                { icon: UserCheck, iconBg: "bg-teal-100",   iconColor: "text-teal-500",   value: stats.hired,             label: "Hired"               },
+              ].map((card, i) => (
+                <motion.div
+                  key={card.label}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.04 * (i + 1), duration: 0.3 }}
+                  className="flex items-center gap-3 rounded-2xl border border-gray-100 bg-white px-4 py-4 shadow-sm"
+                >
+                  <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${card.iconBg}`}>
+                    <card.icon className={`h-5 w-5 ${card.iconColor}`} />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-black leading-none text-gray-900">{card.value}</p>
+                    <p className="mt-0.5 text-[11px] font-medium text-gray-400">{card.label}</p>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
 
-                            {/* Edit */}
-                            <button
-                              onClick={() => openEditModal(job)}
-                              title="Edit role"
-                              className="flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 transition hover:border-violet-300 hover:bg-violet-50 hover:text-violet-600"
-                            >
-                              <Pencil className="h-3.5 w-3.5" />
-                            </button>
+            {/* ── Recent Jobs card ── */}
+            <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
+              {/* Card header */}
+              <div className="flex items-center justify-between border-b border-gray-100 px-5 py-3.5">
+                <div>
+                  <p className="text-sm font-black text-gray-900">Recent Jobs</p>
+                  <p className="text-xs text-gray-400">{filteredJobs.length} role{filteredJobs.length !== 1 ? "s" : ""}</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="relative">
+                    <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3 w-3 -translate-y-1/2 text-gray-400" />
+                    <input
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                      placeholder="Search title…"
+                      className="h-8 w-40 rounded-lg border border-gray-200 bg-gray-50 pl-7 pr-3 text-xs outline-none transition focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-100"
+                    />
+                  </div>
+                  <div className="relative flex items-center">
+                    <Filter className="pointer-events-none absolute left-2.5 h-3 w-3 text-gray-400" />
+                    <select
+                      value={statusFilter}
+                      onChange={(e) => setStatusFilter(e.target.value as any)}
+                      className="h-8 appearance-none rounded-lg border border-gray-200 bg-gray-50 pl-7 pr-5 text-xs font-semibold text-gray-700 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                    >
+                      <option value="All">All</option>
+                      <option value="Open">Open</option>
+                      <option value="Paused">Paused</option>
+                      <option value="Closed">Closed</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
 
-                            {/* Delete */}
-                            <button
-                              onClick={() => setDeleteModalJob(job)}
-                              title="Delete role"
-                              className="flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 transition hover:border-red-300 hover:bg-red-50 hover:text-red-600"
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </button>
-                          </div>
-                        </td>
-                      </motion.tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
+              {/* Job rows */}
+              {loading ? (
+                <div className="flex flex-col items-center justify-center gap-3 py-14">
+                  <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
+                  <p className="text-sm font-semibold text-gray-400">Loading jobs…</p>
+                </div>
+              ) : filteredJobs.length === 0 ? (
+                <div className="flex flex-col items-center justify-center gap-3 py-14">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gray-100 text-gray-400">
+                    <Briefcase className="h-5 w-5" />
+                  </div>
+                  <p className="text-sm font-bold text-gray-700">No roles found</p>
+                  <p className="text-xs text-gray-400">
+                    Try adjusting filters, or{" "}
+                    <button onClick={openCreateModal} className="font-semibold text-blue-600 underline underline-offset-2">
+                      post a new role
+                    </button>.
+                  </p>
+                </div>
+              ) : (
+                <div className="divide-y divide-gray-50">
+                  {filteredJobs.map((job, idx) => (
+                    <motion.div
+                      key={job.id}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: idx * 0.03 }}
+                      className="flex items-center gap-3 px-5 py-3 transition-colors hover:bg-blue-50/30"
+                    >
+                      {/* Colored type icon */}
+                      <JobTypeIcon type={job.jobType} />
+
+                      {/* Title + posted */}
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-bold text-gray-900">{job.title}</p>
+                        <p className="text-[11px] text-gray-400">Posted {timeAgo(job.createdAt)}</p>
+                      </div>
+
+                      {/* Application count */}
+                      <div className="hidden text-right sm:block">
+                        <p className="text-[10px] text-gray-400">Applications</p>
+                        {/* <p className="text-sm font-black text-gray-800">{job.applicantCount ?? 0}</p> */}
+                      </div>
+
+                      {/* Status badge */}
+                      <span className={`hidden items-center gap-1 rounded-full px-3 py-1 text-xs font-bold sm:inline-flex ${getStatusClasses(job.status)}`}>
+                        <span className="h-1.5 w-1.5 rounded-full bg-current opacity-60" />
+                        {job.status === "Open" ? "Active" : job.status}
+                      </span>
+
+                      {/* Actions */}
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => handleOpenApplicantsPage(job)}
+                          title="View applicants"
+                          className="flex h-7 items-center gap-1 rounded-lg border border-blue-100 bg-blue-50 px-2 text-[11px] font-bold text-blue-600 transition hover:bg-blue-100"
+                        >
+                          {applicantsLoadingRowId === job.id
+                            ? <Loader2 className="h-3 w-3 animate-spin" />
+                            : <Users className="h-3 w-3" />}
+                          <span className="hidden lg:inline">View</span>
+                        </button>
+                        <button
+                          onClick={() => openEditModal(job)} title="Edit"
+                          className="flex h-7 w-7 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-400 transition hover:border-violet-200 hover:bg-violet-50 hover:text-violet-600"
+                        >
+                          <Pencil className="h-3 w-3" />
+                        </button>
+                        <button
+                          onClick={() => setDeleteModalJob(job)} title="Delete"
+                          className="flex h-7 w-7 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-400 transition hover:border-red-200 hover:bg-red-50 hover:text-red-500"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </button>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              )}
+
+              {/* View All footer */}
+              {filteredJobs.length > 0 && (
+                <div className="flex items-center justify-center border-t border-gray-100 py-3">
+                  <button className="flex items-center gap-1 text-sm font-bold text-blue-600 hover:underline">
+                    View All Jobs <ChevronRight className="h-4 w-4" />
+                  </button>
+                </div>
+              )}
             </div>
           </div>
+
+          {/* ══ RIGHT PANEL — Top Applicants ══ */}
+          <aside className="hidden w-60 shrink-0 overflow-y-auto border-l border-gray-100 bg-white px-4 py-6 xl:flex xl:flex-col">
+            <div className="mb-4 flex items-center justify-between">
+              <p className="text-sm font-black text-gray-900">Top Applicants</p>
+              <button className="text-xs font-semibold text-blue-600 hover:underline">See all</button>
+            </div>
+
+            <div className="flex flex-col gap-2.5">
+              {MOCK_APPLICANTS.map((applicant, idx) => (
+                <motion.div
+                  key={applicant.id}
+                  initial={{ opacity: 0, x: 10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.06 * idx, duration: 0.3 }}
+                  className="flex cursor-pointer items-center gap-3 rounded-xl border border-gray-100 p-2.5 transition hover:border-blue-100 hover:bg-blue-50/40"
+                >
+                  {/* Avatar circle */}
+                  <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${applicant.color} text-xs font-black text-white`}>
+                    {applicant.name.split(" ").map((n) => n[0]).join("").slice(0, 2)}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-bold text-gray-900">{applicant.name}</p>
+                    <p className="truncate text-[11px] text-gray-400">{applicant.role}</p>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+
+            {/* Quick stats widget */}
+            <div className="mt-5 rounded-2xl border border-blue-100 bg-blue-50 p-4">
+              <p className="mb-2.5 text-[10px] font-black uppercase tracking-wider text-blue-500">Quick Stats</p>
+              {[
+                { label: "Open Roles",  value: stats.active,            color: "text-emerald-600" },
+                { label: "Paused",      value: stats.shortlisted,       color: "text-amber-600"   },
+                { label: "Closed",      value: stats.hired,             color: "text-red-500"     },
+              ].map((s) => (
+                <div key={s.label} className="flex items-center justify-between py-1">
+                  <span className="text-xs text-gray-500">{s.label}</span>
+                  <span className={`text-sm font-black ${s.color}`}>{s.value}</span>
+                </div>
+              ))}
+            </div>
+          </aside>
         </div>
       </div>
 
-      {/* ══════════════════════════════════════════
-          DELETE CONFIRM MODAL
-      ══════════════════════════════════════════ */}
+      {/* ══ DELETE MODAL ══ */}
       <AnimatePresence>
         {deleteModalJob && (
           <DeleteConfirmModal
@@ -662,16 +671,13 @@ const JobPostDashboardPage: React.FC = () => {
         )}
       </AnimatePresence>
 
-      {/* ══════════════════════════════════════════
-          MODAL — Create / Edit Role
-      ══════════════════════════════════════════ */}
+      {/* ══ CREATE / EDIT MODAL ══ */}
       <AnimatePresence>
         {formModalOpen && (
           <>
             <motion.div
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              onClick={closeJobFormModal}
+              transition={{ duration: 0.2 }} onClick={closeJobFormModal}
               className="fixed inset-0 z-[80] bg-gray-900/40 backdrop-blur-sm"
             />
             <div className="fixed inset-0 z-[90] flex items-center justify-center p-4 sm:p-6 lg:p-10">
@@ -684,6 +690,8 @@ const JobPostDashboardPage: React.FC = () => {
                 className="relative w-full max-w-2xl overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl"
               >
                 <div className="h-1 w-full bg-blue-600" />
+
+                {/* Modal header */}
                 <div className="border-b border-gray-100 px-6 py-5">
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex items-center gap-4">
@@ -710,6 +718,7 @@ const JobPostDashboardPage: React.FC = () => {
                   </div>
                 </div>
 
+                {/* Modal body */}
                 <div className="max-h-[60vh] overflow-y-auto px-6 py-6">
                   <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
                     <div className="sm:col-span-2">
@@ -804,6 +813,7 @@ const JobPostDashboardPage: React.FC = () => {
                       </Field>
                     </div>
                   </div>
+
                   {jobFormError && (
                     <div className="mt-4 flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3">
                       <X className="mt-0.5 h-4 w-4 shrink-0 text-red-500" />
@@ -812,6 +822,7 @@ const JobPostDashboardPage: React.FC = () => {
                   )}
                 </div>
 
+                {/* Modal footer */}
                 <div className="flex gap-3 border-t border-gray-100 px-6 py-4">
                   <button onClick={handleJobFormSubmit} disabled={jobFormSubmitting}
                     className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
