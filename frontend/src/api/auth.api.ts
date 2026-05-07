@@ -51,10 +51,10 @@ API.interceptors.response.use(
 );
 
 // REGISTER
-export const registerUser = (data) => API.post("/register", data);
+export const registerUser = (data:string) => API.post("/register", data);
 
 // LOGIN
-export const loginUser = async (data) => {
+export const loginUser = async (data:string) => {
   return await API.post("/login", data);
 };
 
