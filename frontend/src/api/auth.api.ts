@@ -8,6 +8,7 @@ const API = axios.create({
   withCredentials: true, // ✅ cookies automatically send hongi
 });
 
+
 // REQUEST INTERCEPTOR
 API.interceptors.request.use((config) => {
   // ❌ localStorage token / Authorization header nahi chahiye
@@ -50,13 +51,25 @@ API.interceptors.response.use(
   }
 );
 
+type RegisterPayload = {
+  name: string;
+  email: string;
+  password: string;
+  role: "job_poster" | "job_seeker";
+};
+
+type LoginPayload = {
+  email: string;
+  password: string;
+};
+
 // REGISTER
-export const registerUser = (data:string) => API.post("/register", data);
+export const registerUser = (data: RegisterPayload) =>
+  API.post("/register", data);
 
 // LOGIN
-export const loginUser = async (data:string) => {
-  return await API.post("/login", data);
-};
+export const loginUser = (data: LoginPayload) =>
+  API.post("/login", data);
 
 // GET ME
 export const getMe = () => API.get("/me");
