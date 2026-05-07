@@ -73,14 +73,8 @@ const jobsAPI = axios.create({
 });
 
 jobsAPI.interceptors.request.use((config) => {
-  const token = localStorage.getItem("accessToken");
-  if (token) {
-    config.headers = config.headers || {};
-    config.headers.Authorization = `Bearer ${token}`;
-  }
   return config;
 });
-
 const getMyJobs = async (): Promise<MyJobsResponse> => {
   const res = await jobsAPI.get<MyJobsResponse>("/my/jobs");
   return res.data;

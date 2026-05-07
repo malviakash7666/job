@@ -91,16 +91,10 @@ const jobPostAPI = axios.create({
   withCredentials: true,
 });
 
-/* ================= REQUEST INTERCEPTOR ================= */
+
 
 jobPostAPI.interceptors.request.use((config) => {
-  const token = localStorage.getItem("accessToken");
-
-  if (token) {
-    config.headers = config.headers || {};
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-
+  // ✅ httpOnly cookies automatically send hongi
   return config;
 });
 

@@ -66,51 +66,43 @@ export interface ApiResponse<T> {
 
 /* ================= AXIOS INSTANCE ================= */
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3000";
+const BACKEND_URL =
+  import.meta.env.VITE_BACKEND_URL || "http://localhost:3000";
 
 const jobApplicationAPI = axios.create({
   baseURL: `${BACKEND_URL}/api/v1/job-applications`,
   withCredentials: true,
 });
 
-/* ================= REQUEST INTERCEPTOR ONLY ================= */
+/* ================= REQUEST INTERCEPTOR ================= */
 
 jobApplicationAPI.interceptors.request.use((config) => {
-  const token = localStorage.getItem("accessToken");
-
-  if (token) {
-    config.headers = config.headers || {};
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-
+  // ✅ cookies automatically send hongi
   return config;
 });
 
 /* ================= API METHODS ================= */
 
-// APPLY FOR JOB
 export const applyForJob = (data: ApplyForJobPayload) =>
-  jobApplicationAPI.post<ApiResponse<JobApplication>>("/", data).then((res) => res.data);
+  jobApplicationAPI
+    .post<ApiResponse<JobApplication>>("/", data)
+    .then((res) => res.data);
 
-// GET LOGGED-IN USER APPLICATIONS
 export const getMyApplications = () =>
   jobApplicationAPI
     .get<ApiResponse<JobApplication[]>>("/my")
     .then((res) => res.data);
 
-// GET ALL APPLICATIONS FOR A SPECIFIC JOB
 export const getApplicationsByJob = (jobId: string) =>
   jobApplicationAPI
     .get<ApiResponse<JobApplication[]>>(`/job/${jobId}`)
     .then((res) => res.data);
 
-// GET SINGLE APPLICATION BY ID
 export const getApplicationById = (id: string) =>
   jobApplicationAPI
     .get<ApiResponse<JobApplication>>(`/${id}`)
     .then((res) => res.data);
 
-// UPDATE APPLICATION STATUS
 export const updateApplicationStatus = (
   id: string,
   data: UpdateJobApplicationStatusPayload
@@ -119,7 +111,6 @@ export const updateApplicationStatus = (
     .patch<ApiResponse<JobApplication>>(`/${id}/status`, data)
     .then((res) => res.data);
 
-// DELETE APPLICATION
 export const deleteApplication = (id: string) =>
   jobApplicationAPI
     .delete<ApiResponse<null>>(`/${id}`)

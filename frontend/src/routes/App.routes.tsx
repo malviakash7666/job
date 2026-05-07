@@ -9,10 +9,10 @@ import JobDetailPage from "../pages/JobDetailPage";
 import ProtectedRoute from "./Protected.routes";
 import JobsPage from "../pages/JobsPage";
 import CompaniesPage from "../pages/CompaniesPage";
+import { useAuth } from "../hooks/useAuth";
 
 const App = () => {
-  const token = localStorage.getItem("accessToken");
-  const user = JSON.parse(localStorage.getItem("user") || "null");
+  const { user, loading } = useAuth();
 
   const getRedirectForRole = (r: any) => {
     if (!r) return "/";
@@ -21,17 +21,24 @@ const App = () => {
     return "/";
   };
 
+  if (loading) {
+    return <div className="p-10">Loading...</div>;
+  }
+
   return (
     <Routes>
       <Route path="/" element={<HomePage />} />
       <Route path="/companies" element={<CompaniesPage />} />
       <Route path="/jobs" element={<JobsPage />} />
 
-
-      {/* If already logged in → redirect */}
       <Route
         path="/login"
-        element={token ? <Navigate to={getRedirectForRole(user?.role)} /> : <LoginPage />}
+        element={user ? <Navigate to={getRedirectForRole(user.role)} replace /> : <LoginPage />}
+      />
+
+      <Route
+        path="/signup"
+        element={user ? <Navigate to={getRedirectForRole(user.role)} replace /> : <SignupPage />}
       />
 
       <Route
@@ -52,12 +59,6 @@ const App = () => {
         }
       />
 
-      <Route
-        path="/signup"
-        element={token ? <Navigate to={getRedirectForRole(user?.role)} /> : <SignupPage />}
-      />
-
-      {/* JOB DASHBOARD */}
       <Route
         path="/dashboard"
         element={
@@ -85,17 +86,17 @@ const App = () => {
         }
       />
 
-      {/* Future writer dashboard */}
       <Route
         path="/writer-dashboard"
         element={
           <ProtectedRoute allowedRoles={["writer"]}>
-            <div className="p-10 text-xl font-semibold">Writer Dashboard (Coming Soon)</div>
+            <div className="p-10 text-xl font-semibold">
+              Writer Dashboard (Coming Soon)
+            </div>
           </ProtectedRoute>
         }
       />
 
-      {/* Fallback */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

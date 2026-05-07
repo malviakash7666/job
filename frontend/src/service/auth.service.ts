@@ -15,7 +15,7 @@ export interface RegisterPayload {
   name: string;
   email: string;
   password: string;
-  role: Exclude<UserRole, "admin">; // self register only job_poster / job_seeker
+  role: Exclude<UserRole, "admin">;
 }
 
 export interface LoginPayload {
@@ -26,7 +26,6 @@ export interface LoginPayload {
 export interface AuthSuccessResponse {
   success: boolean;
   message: string;
-  accessToken?: string;
   user?: User;
 }
 
@@ -37,13 +36,13 @@ export interface GetMeResponse {
 
 export interface RefreshTokenResponse {
   success: boolean;
-  accessToken: string;
-  user: User;
+  user?: User;
 }
 
 /* ================= AXIOS INSTANCE ================= */
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3000";
+const BACKEND_URL =
+  import.meta.env.VITE_BACKEND_URL || "http://localhost:3000";
 
 const authAPI = axios.create({
   baseURL: `${BACKEND_URL}/api/auth`,
@@ -53,23 +52,20 @@ const authAPI = axios.create({
 /* ================= REQUEST INTERCEPTOR ================= */
 
 authAPI.interceptors.request.use((config) => {
-  const token = localStorage.getItem("accessToken");
-
-  if (token) {
-    config.headers = config.headers || {};
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-
+  // ✅ token cookie automatically send hogi
   return config;
 });
 
 /* ================= RESPONSE INTERCEPTOR ================= */
-/* Optional: auto refresh on 401 */
 
 authAPI.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
+
+    if (!originalRequest) {
+      throw error;
+    }
 
     if (
       error.response?.status === 401 &&
@@ -81,20 +77,12 @@ authAPI.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
-        const refreshResponse = await authAPI.post<RefreshTokenResponse>(
-          "/refresh-token"
-        );
+        // ✅ refresh token cookie backend ko jayegi
+        await authAPI.post<RefreshTokenResponse>("/refresh-token");
 
-        const newAccessToken = refreshResponse.data.accessToken;
-
-        localStorage.setItem("accessToken", newAccessToken);
-
-        originalRequest.headers = originalRequest.headers || {};
-        originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
-
+        // ✅ backend new access token cookie set karega
         return authAPI(originalRequest);
       } catch (refreshError) {
-        localStorage.removeItem("accessToken");
         throw refreshError;
       }
     }
@@ -108,31 +96,18 @@ authAPI.interceptors.response.use(
 // REGISTER
 export const registerUser = async (data: RegisterPayload) => {
   const res = await authAPI.post<AuthSuccessResponse>("/register", data);
-
-  if (res.data.accessToken) {
-    localStorage.setItem("accessToken", res.data.accessToken);
-  }
-
   return res.data;
 };
 
 // LOGIN
 export const loginUser = async (data: LoginPayload) => {
   const res = await authAPI.post<AuthSuccessResponse>("/login", data);
-
-  if (res.data.accessToken) {
-    localStorage.setItem("accessToken", res.data.accessToken);
-  }
-
   return res.data;
 };
 
 // LOGOUT
 export const logoutUser = async () => {
   const res = await authAPI.post<AuthSuccessResponse>("/logout");
-
-  localStorage.removeItem("accessToken");
-
   return res.data;
 };
 
@@ -145,11 +120,6 @@ export const getMe = async () => {
 // REFRESH TOKEN
 export const refreshAccessToken = async () => {
   const res = await authAPI.post<RefreshTokenResponse>("/refresh-token");
-
-  if (res.data.accessToken) {
-    localStorage.setItem("accessToken", res.data.accessToken);
-  }
-
   return res.data;
 };
 
