@@ -7,6 +7,11 @@ import RecruiterApplicantsPage from "./pages/RecruiterApplicantsPage";
 import JobSeekerDashboardPage from "./pages/dashbord/JobSeekerDashboardPage";
 import ProtectedRoute from "./routes/Protected.routes";
 import { useAuth } from "./hooks/useAuth";
+import CompaniesPage from "./pages/CompaniesPage";
+import JobsPage from "./pages/JobsPage";
+import CategoriesPage from "./pages/CategoriesPage";
+import PricingPage from "./pages/PricingPage";
+import AboutPage from "./pages/AboutPage";
 
 const getRoleRedirect = (role: string | undefined) => {
   if (!role) return "/";
@@ -64,6 +69,14 @@ const App = () => {
           )
         }
       />
+           <Route path="/companies" element={<CompaniesPage />} />
+      <Route path="/jobs" element={<JobsPage />} />
+      <Route path="/categories" element={<CategoriesPage />} />
+      <Route path="/pricing" element={<PricingPage />} />
+      <Route path="/about" element={<AboutPage />} />
+
+
+     
 
       {/* Job Poster Dashboard */}
       <Route

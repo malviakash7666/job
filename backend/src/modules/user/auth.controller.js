@@ -4,7 +4,7 @@ import {
   generateAccessToken,
   generateRefreshToken,
 } from "../../utils/token.utils.js";
-
+import crypto from "crypto";
 const { User } = db;
 
 /* ── Only these roles can self-register (admin is excluded intentionally) ── */
@@ -166,6 +166,124 @@ export const loginUser = async (req, res) => {
   }
 };
 
+// ─────────────────────────────────────────────
+// FORGOT PASSWORD
+// ─────────────────────────────────────────────
+export const forgotPassword = async (req, res) => {
+  try {
+    let { email } = req.body;
+
+    email = email?.trim().toLowerCase();
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: "Email is required",
+      });
+    }
+
+    const user = await User.findOne({ where: { email } });
+
+    // Same response for security
+    if (!user) {
+      return res.status(200).json({
+        success: true,
+        message:
+          "If this email exists, a password reset link has been sent.",
+      });
+    }
+
+    // Generate token
+    const resetToken = crypto.randomBytes(32).toString("hex");
+
+    // Save token + expiry
+    user.resetPasswordToken = resetToken;
+    user.resetPasswordExpires = Date.now() + 15 * 60 * 1000;
+
+    await user.save();
+
+    // Frontend URL
+    const resetUrl = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
+
+    console.log("RESET URL:", resetUrl);
+
+    // TODO: Send email here
+
+    return res.status(200).json({
+      success: true,
+      message:
+        "If this email exists, a password reset link has been sent.",
+    });
+  } catch (error) {
+    console.error("FORGOT PASSWORD ERROR:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Server error during forgot password",
+    });
+  }
+};
+// ─────────────────────────────────────────────
+// RESET PASSWORD
+// ─────────────────────────────────────────────
+export const resetPassword = async (req, res) => {
+  try {
+    const { token } = req.params;
+
+    let { password } = req.body;
+
+    password = password?.trim();
+
+    if (!password) {
+      return res.status(400).json({
+        success: false,
+        message: "Password is required",
+      });
+    }
+
+    const user = await User.findOne({
+      where: {
+        resetPasswordToken: token,
+      },
+    });
+
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid reset token",
+      });
+    }
+
+    // Expiry check
+    if (new Date(user.resetPasswordExpires) < new Date()) {
+      return res.status(400).json({
+        success: false,
+        message: "Reset token expired",
+      });
+    }
+
+    // Update password
+    user.password = password;
+
+    // Clear reset fields
+    user.resetPasswordToken = null;
+    user.resetPasswordExpires = null;
+
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Password reset successful",
+    });
+  } catch (error) {
+    console.error("RESET PASSWORD ERROR:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Server error during password reset",
+    });
+  }
+};
 // ─────────────────────────────────────────────
 // GET ME (requires auth middleware)
 // ─────────────────────────────────────────────

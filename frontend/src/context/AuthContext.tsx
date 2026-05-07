@@ -15,21 +15,25 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // On mount, verify the httpOnly refresh-cookie is still valid by calling /me.
-    // The axios instance (auth.api) attaches withCredentials so the cookie goes along.
     getMe()
-      .then((res) => setUser(res.data.user))
-      .catch(() => setUser(null))
-      .finally(() => setLoading(false));
+      .then((res) => {
+        setUser(res.data.user);
+      })
+      .catch(() => {
+        setUser(null);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
   }, []);
 
   const logout = async () => {
     try {
-      await logoutUser();
+      await logoutUser(); // ✅ backend cookies clear karega
     } catch {
-      // Even if the request fails, clear local state
+      // ignore error
     } finally {
-      setUser(null);
+      setUser(null); // ✅ frontend state clear
     }
   };
 

@@ -7,6 +7,8 @@ import RecruiterApplicantsPage from "../pages/RecruiterApplicantsPage";
 import JobSeekerDashboardPage from "../pages/dashbord/JobSeekerDashboardPage";
 import JobDetailPage from "../pages/JobDetailPage";
 import ProtectedRoute from "./Protected.routes";
+import JobsPage from "../pages/JobsPage";
+import CompaniesPage from "../pages/CompaniesPage";
 
 const App = () => {
   const token = localStorage.getItem("accessToken");
@@ -22,6 +24,9 @@ const App = () => {
   return (
     <Routes>
       <Route path="/" element={<HomePage />} />
+      <Route path="/companies" element={<CompaniesPage />} />
+      <Route path="/jobs" element={<JobsPage />} />
+
 
       {/* If already logged in → redirect */}
       <Route

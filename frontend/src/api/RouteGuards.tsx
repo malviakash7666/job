@@ -1,40 +1,35 @@
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 
-interface RouteGuardProps {
+interface Props {
   children: React.ReactNode;
+  allowedRoles?: string[];
 }
 
-export function GuestRoute({ children }: RouteGuardProps) {
+const getRoleHome = (role: string) => {
+  switch (role) {
+    case "job_poster":
+    case "admin":
+      return "/dashboard/jobs";
+    case "job_seeker":
+      return "/dashboard";
+    default:
+      return "/";
+  }
+};
+
+export function GuestRoute({ children }: Props) {
   const { user, loading } = useAuth();
-
-  // 1. Wait for the initial authentication check to finish
-  if (loading) {
-    return <div>Loading...</div>; // Replace with your actual loading spinner/skeleton
-  }
-
-  // 2. If the user is already logged in, redirect them away from guest pages
-  if (user) {
-    return <Navigate to="/dashboard" replace />;
-  }
-
-  // 3. Otherwise, let them see the guest page (Login/Register)
+  if (loading) return <div />;
+  if (user) return <Navigate to={getRoleHome((user as any).role)} replace />;
   return <>{children}</>;
 }
 
-export function ProtectedRoute({ children }: RouteGuardProps) {
+export function ProtectedRoute({ children, allowedRoles }: Props) {
   const { user, loading } = useAuth();
-
-  // 1. Wait for the initial authentication check to finish
-  if (loading) {
-    return <div>Loading...</div>; // Replace with your actual loading spinner/skeleton
-  }
-
-  // 2. If no user is found, kick them back to login
-  if (!user) {
-    return <Navigate to="/login" replace />;
-  }
-
-  // 3. Otherwise, render the protected content
+  if (loading) return <div />;
+  if (!user) return <Navigate to="/login" replace />;
+  if (allowedRoles && !allowedRoles.includes((user as any).role))
+    return <Navigate to={getRoleHome((user as any).role)} replace />;
   return <>{children}</>;
 }
