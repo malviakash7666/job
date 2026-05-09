@@ -394,3 +394,49 @@ export const deleteApplication = async (req, res) => {
     });
   }
 };
+
+
+/**
+ * Get all job applications (admin only)
+ * GET /api/v1/job-applications
+ */
+export const getAllApplications = async (req, res) => {
+  try {
+    // ── Only admin can view all applications ───────────────────────────────
+    if (req.user.role !== "admin") {
+      return res.status(403).json({
+        success: false,
+        message: "Only admin can view all job applications",
+      });
+    }
+
+    const applications = await JobApplication.findAll({
+      include: [
+        {
+          model: User,
+          as: "applicant",
+          attributes: ["id", "name", "email"],
+        },
+        {
+          model: Job,
+          as: "job",
+        },
+      ],
+      order: [["createdAt", "DESC"]],
+    });
+
+    return res.status(200).json({
+      success: true,
+      count: applications.length,
+      data: applications,
+    });
+  } catch (error) {
+    console.error("getAllApplications error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch all job applications",
+      error: error.message,
+    });
+  }
+};
+

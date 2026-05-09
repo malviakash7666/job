@@ -1,17 +1,19 @@
 import { Navigate, Route, Routes } from "react-router-dom";
-import HomePage from "./pages/HomePage";
+import HomePage from "./pages/Public/HomePage";
 import LoginPage from "./auth/LoginPage";
 import SignupPage from "./auth/SignupPage";
 import JobPostDashboardPage from "./pages/dashbord/JobPostDashboardPage";
-import RecruiterApplicantsPage from "./pages/RecruiterApplicantsPage";
+import RecruiterApplicantsPage from "./pages/jobPoster/RecruiterApplicantsPage";
 import JobSeekerDashboardPage from "./pages/dashbord/JobSeekerDashboardPage";
 import ProtectedRoute from "./routes/Protected.routes";
 import { useAuth } from "./hooks/useAuth";
-import CompaniesPage from "./pages/CompaniesPage";
-import JobsPage from "./pages/JobsPage";
+import CompaniesPage from "./pages/Public/CompaniesPage";
+import JobsPage from "./pages/jobPoster/JobsPage";
 import CategoriesPage from "./pages/CategoriesPage";
-import PricingPage from "./pages/PricingPage";
-import AboutPage from "./pages/AboutPage";
+import PricingPage from "./pages/Public/PricingPage";
+import AboutPage from "./pages/Public/AboutPage";
+import CompanyProfilePage from "./pages/jobPoster/CompanyProfilePage";
+import SettingsPage from "./pages/jobPoster/SettingsPage";
 
 const getRoleRedirect = (role: string | undefined) => {
   if (!role) return "/";
@@ -78,10 +80,46 @@ return (
     />
 
     <Route
+      path="/dashboard/my-jobs"
+      element={
+        <ProtectedRoute allowedRoles={["job_poster", "admin"]}>
+          <JobsPage />
+        </ProtectedRoute>
+      }
+    />
+
+    <Route
+      path="/dashboard/applications"
+      element={
+        <ProtectedRoute allowedRoles={["job_poster", "admin"]}>
+          <RecruiterApplicantsPage />
+        </ProtectedRoute>
+      }
+    />
+
+    <Route
       path="/dashboard/jobs/:jobId"
       element={
         <ProtectedRoute allowedRoles={["job_poster", "admin"]}>
           <RecruiterApplicantsPage />
+        </ProtectedRoute>
+      }
+    />
+
+    <Route
+      path="/dashboard/company"
+      element={
+        <ProtectedRoute allowedRoles={["job_poster", "admin"]}>
+          <CompanyProfilePage />
+        </ProtectedRoute>
+      }
+    />
+
+    <Route
+      path="/dashboard/settings"
+      element={
+        <ProtectedRoute allowedRoles={["job_poster", "admin"]}>
+          <SettingsPage />
         </ProtectedRoute>
       }
     />

@@ -27,11 +27,11 @@ import {
 import { useParams, useNavigate } from "react-router-dom";
 import {
   getApplicationsByJob,
-} from "../service/jobApplication.service";
+} from "../../service/jobApplication.service";
 import type {
   JobApplication,
   JobApplicationStatus,
-} from "../service/jobApplication.service";
+} from "../../service/jobApplication.service";
 
 /* ================= TYPES ================= */
 

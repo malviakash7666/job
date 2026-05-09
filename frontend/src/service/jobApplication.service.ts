@@ -98,6 +98,9 @@ export const getApplicationsByJob = (jobId: string) =>
     .get<ApiResponse<JobApplication[]>>(`/job/${jobId}`)
     .then((res) => res.data);
 
+    // GET ALL APPLICATIONS
+export const getAllApplications = () =>
+  jobApplicationAPI.get("/get/all").then((res) => res.data);
 export const getApplicationById = (id: string) =>
   jobApplicationAPI
     .get<ApiResponse<JobApplication>>(`/${id}`)

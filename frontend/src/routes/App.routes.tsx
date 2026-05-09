@@ -1,14 +1,14 @@
 import { Navigate, Route, Routes } from "react-router-dom";
-import HomePage from "../pages/HomePage";
+import HomePage from "../pages/Public/HomePage";
 import LoginPage from "../auth/LoginPage";
 import SignupPage from "../auth/SignupPage";
 import JobPostDashboardPage from "../pages/dashbord/JobPostDashboardPage";
-import RecruiterApplicantsPage from "../pages/RecruiterApplicantsPage";
+import RecruiterApplicantsPage from "../pages/jobPoster/RecruiterApplicantsPage";
 import JobSeekerDashboardPage from "../pages/dashbord/JobSeekerDashboardPage";
 import JobDetailPage from "../pages/JobDetailPage";
 import ProtectedRoute from "./Protected.routes";
-import JobsPage from "../pages/JobsPage";
-import CompaniesPage from "../pages/CompaniesPage";
+import JobsPage from "../pages/jobPoster/JobsPage";
+import CompaniesPage from "../pages/Public/CompaniesPage";
 import { useAuth } from "../hooks/useAuth";
 
 const App = () => {
